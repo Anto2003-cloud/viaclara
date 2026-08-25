@@ -1277,7 +1277,7 @@ function buildAlternatives(){
   const A_vcCorr=corridorVc(A_L,A_vias), B_vcCorr=corridorVc(B_L,B_vias), C_vcCorr=corridorVc(C_L,C_vias);
   const list=[
     {
-      id:'ALT-A', tag:'recomendada', title:'Desvío protegido Centenario → Carrera 19 + onda verde',
+      id:'ALT-A', tag:'movilidad', title:'Desvío protegido Centenario → Carrera 19 + onda verde',
       L:A_L, m:A_m, ml:A_ml,
       ruta:'Av. Centenario (tramo OB-002) → Carrera 19 → reincorporación en Calle 21',
       vias:['Av. Centenario','Carrera 19','Calle 21'],
@@ -1320,18 +1320,32 @@ function buildAlternatives(){
     }
 
   ];
-  // Etiqueta operativa según métrica (no fija): mejor v/c de corredor entre las que cumplen hard constraints
+  // Rol por movilidad (v/c corredor). NO es la unica verdad: Multicriterio e ML pueden diferir.
   const ok=list.filter(a=>Object.values(a.restricciones).every(Boolean));
   const pool=ok.length?ok:list;
-  pool.forEach(a=>a.tag='alternativa');
-  const best=[...pool].sort((a,b)=>a.vcMax-b.vcMax||a.m.p95-b.m.p95)[0];
-  if(best) best.tag='recomendada';
-  const rest=pool.filter(a=>a!==best).sort((a,b)=>a.vcMax-b.vcMax);
+  pool.forEach(a=>{ a.tag='alternativa'; a.roles={movilidad:false,integral:false}; });
+  list.forEach(a=>{ if(!a.roles) a.roles={movilidad:false,integral:false}; });
+  const bestMov=[...pool].sort((a,b)=>a.vcMax-b.vcMax||a.m.p95-b.m.p95)[0];
+  if(bestMov){ bestMov.tag='movilidad'; bestMov.roles.movilidad=true; }
+  const rest=pool.filter(a=>a!==bestMov).sort((a,b)=>a.vcMax-b.vcMax);
   if(rest[0]) rest[0].tag='alternativa';
   if(rest[1]) rest[1].tag='contingencia';
   list.forEach(a=>{ if(!pool.includes(a)) a.tag='alternativa'; });
   return list;
 }
+
+function pickBestMobility(alts){
+  const pool=(alts||[]).filter(a=>typeof passesHard==='function'?passesHard(a):Object.values(a.restricciones||{}).every(Boolean));
+  const src=pool.length?pool:(alts||[]);
+  if(!src.length) return null;
+  return [...src].sort((a,b)=>a.vcMax-b.vcMax||a.m.p95-b.m.p95)[0];
+}
+function pickBestDelay(alts){
+  const src=alts||[];
+  if(!src.length) return null;
+  return [...src].sort((a,b)=>(a.ml&&a.ml.delay!=null?a.ml.delay:9e9)-(b.ml&&b.ml.delay!=null?b.ml.delay:9e9))[0];
+}
+
 const HARD_CONSTRAINT_LABELS={
   ambulancia:'No bloquea acceso de ambulancias o bomberos',
   viaApta:'No usa vías no aptas para el tipo/volumen de tráfico',
@@ -1339,6 +1353,20 @@ const HARD_CONSTRAINT_LABELS={
   seguridad:'No compromete gravemente la seguridad vial',
   emergenciaSimultanea:'No cierra a la vez la vía intervenida y su ruta principal de emergencia'
 };
+// Correcciones orientativas cuando una restricción falla (mensaje operativo, no orden real)
+const HARD_CONSTRAINT_FIX={
+  ambulancia:'Mantener un carril o corredor libre hacia hospitales/bomberos; no ocupar ambos sentidos del acceso de emergencia.',
+  viaApta:'Evitar desviar volumen alto por vías locales no diseñadas para esa carga; usar arterias aptas.',
+  saturacionAlterna:'Redistribuir demanda, acotar el cierre o añadir gestión (onda/ventana) hasta v/c p85 ≤ 1,15 en el alterno.',
+  seguridad:'Reducir conflictos peatonales/ciclistas en el desvío; señalizar y no saturar cruces críticos.',
+  emergenciaSimultanea:'No cerrar a la vez la vía de obra y su ruta principal de emergencia; escalonar o dejar paso prioritario.'
+};
+function hardFails(alt){
+  if(!alt||!alt.restricciones) return [];
+  return Object.entries(alt.restricciones).filter(([,v])=>!v).map(([k])=>k);
+}
+function passesHard(alt){ return hardFails(alt).length===0; }
+
 
 let lastRec=null;
 
@@ -1399,12 +1427,15 @@ function buildLastRun(R){
   const sh={obra:SHOCKS.obra.on,semaforo:SHOCKS.semaforo.on,evento:SHOCKS.evento.on};
   const baseline=metrics(loadsWith(sh,{desvio:false,onda:false,ventana:false}));
   const alts=buildAlternatives();
-  const recommended=alts.find(a=>a.tag==='recomendada')||alts[0];
+  const bestMov=pickBestMobility(alts)||alts[0];
   const ranked=[...alts].sort((a,b)=>a.ml.delay-b.ml.delay);
-  const c=conf(); // índice compuesto de sesión (no 1−prob ML)
+  const bestDelay=ranked[0];
+  const c=conf();
   return {
-    off:baseline,on:recommended.m,feats:feats(),conf:c,
-    ml:{current:R.ml,best:ranked[0].ml,ranking:ranked.map(x=>({id:x.id,title:x.title,delay:+x.ml.delay.toFixed(1),prob:+x.ml.prob.toFixed(3)})),auc:VC_ML_MODEL.metrics.auc,mae:VC_ML_MODEL.metrics.mae_min},
+    off:baseline,on:bestMov.m,feats:feats(),conf:c,
+    bestMobilityId:bestMov.id,
+    bestDelayId:bestDelay?bestDelay.id:null,
+    ml:{current:R.ml,best:bestDelay?bestDelay.ml:null,ranking:ranked.map(x=>({id:x.id,title:x.title,delay:+x.ml.delay.toFixed(1),prob:+x.ml.prob.toFixed(3)})),auc:VC_ML_MODEL.metrics.auc,mae:VC_ML_MODEL.metrics.mae_min},
     recs:R.recs,cams:R.cams,obras:R.obras
   };
 }
@@ -2415,10 +2446,14 @@ function renderAlternativesAndDecision(){
 
   const alts=buildAlternatives();
   if(!selectedAltId||!alts.some(a=>a.id===selectedAltId)){
-    selectedAltId=(alts.find(a=>a.tag==='recomendada')||alts[0]).id;
+    const mov=pickBestMobility(alts);
+    const anyOk=alts.find(a=>passesHard(a));
+    selectedAltId=(mov||anyOk||alts[0]).id;
   }
-  const tagLabel={recomendada:'RECOMENDADA',alternativa:'ALTERNATIVA',contingencia:'CONTINGENCIA'};
-  const tagCls={recomendada:'ok',alternativa:'pend',contingencia:'high'};
+  const bestMovId=(pickBestMobility(alts)||{}).id;
+  const bestDelayId=(pickBestDelay(alts)||{}).id;
+  const tagLabel={movilidad:'MEJOR MOVILIDAD',alternativa:'ALTERNATIVA',contingencia:'CONTINGENCIA',recomendada:'MEJOR MOVILIDAD'};
+  const tagCls={movilidad:'ok',alternativa:'pend',contingencia:'high',recomendada:'ok'};
 
   grid.innerHTML=alts.map(a=>`
       <div class="card ${a.id===selectedAltId?'alt-selected':''}">
@@ -2443,21 +2478,30 @@ function renderAlternativesAndDecision(){
           <div style="margin-bottom:8px"><b>Equipamientos esenciales:</b> <span style="color:var(--muted)">${a.equipamientos}</span></div>
           <div style="margin-bottom:8px"><b>Peatones y ciclistas:</b> <span style="color:var(--muted)">${a.seguridadPeatonYBici}</span></div>
           <div style="margin-bottom:8px"><b>Riesgos:</b> <span style="color:var(--muted)">${a.riesgos}</span></div>
-          <div style="margin-bottom:10px;padding:10px;border-radius:10px;background:${a.tag==='recomendada'?'#ecfdf5':'#f8fafc'};border:1px solid var(--line)"><b>Por qué ${a.tag==='recomendada'?'se recomienda':a.tag==='contingencia'?'es la contingencia':'se conserva como alternativa'}:</b><br><span style="color:var(--muted)">${a.razon}</span></div>
+          <div style="margin-bottom:10px;padding:10px;border-radius:10px;background:${a.tag==='movilidad'||a.id===bestMovId?'#ecfdf5':'#f8fafc'};border:1px solid var(--line)"><b>${a.id===bestMovId?'Mejor por movilidad (v/c corredor)':a.tag==='contingencia'?'Contingencia operativa':'Alternativa de comparación'}:</b><br><span style="color:var(--muted)">${a.razon}</span>${a.id===bestDelayId?`<br><span style="font-size:11px;color:var(--muted)">Tambien lidera el ranking ML por demora estimada (otro criterio).</span>`:bestDelayId&&a.id!==bestDelayId?`<br><span style="font-size:11px;color:var(--muted)">El ranking ML por demora apunta a <b>${bestDelayId}</b> (criterio distinto).</span>`:''}</div>
           <div style="margin-bottom:10px">
             <b style="font-size:11px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted)">Restricciones obligatorias</b>
             <div style="margin-top:6px;display:flex;flex-direction:column;gap:4px">
               ${Object.entries(a.restricciones).map(([k,v])=>`<div style="display:flex;gap:6px;align-items:flex-start;font-size:11.5px"><span style="color:${v?'#16A34A':'#DC2626'};font-weight:700;flex-shrink:0">${v?'✓':'✕'}</span><span style="color:var(--muted)">${HARD_CONSTRAINT_LABELS[k]}</span></div>`).join('')}
             </div>
           </div>
-          <button class="btn ${a.id===selectedAltId?'btn-p':'btn-s'}" style="width:100%" data-choose-alt="${a.id}">${a.id===selectedAltId?'✓ Elegida para decidir':'Elegir esta'}</button>
+          ${(()=>{
+            const bad=hardFails(a);
+            if(bad.length){
+              return `<div style="font-size:11px;color:#b91c1c;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:8px 10px;margin-bottom:8px;line-height:1.45">
+                <b>No elegible para aprobación</b> · incumple ${bad.length} restricción(es) obligatoria(s).
+              </div>
+              <button class="btn btn-s" style="width:100%;opacity:.85" data-choose-alt="${a.id}" data-hard-fail="1">${a.id===selectedAltId?'✓ Seleccionada (solo rechazo/ajuste)':'Ver detalle · no aprobar'}</button>`;
+            }
+            return `<button class="btn ${a.id===selectedAltId?'btn-p':'btn-s'}" style="width:100%" data-choose-alt="${a.id}">${a.id===selectedAltId?'✓ Elegida para decidir':'Elegir esta'}</button>`;
+          })()}
         </div>
       </div>`).join('');
   alts.forEach(a=>paintMap(document.getElementById('alt-'+a.id),a.L,{ctrl:true,ix:false,compact:true,labels:true}));
   grid.querySelectorAll('[data-choose-alt]').forEach(btn=>btn.onclick=()=>{
     selectedAltId=btn.dataset.chooseAlt;
+    const blocked=btn.dataset.hardFail==='1';
     renderAlternativesAndDecision();
-    // Inmediatez UX: saltar al registro, resaltar tarjeta y enfocar justificación
     setTimeout(()=>{
       const card=document.getElementById('decision-card');
       if(card){
@@ -2466,8 +2510,13 @@ function renderAlternativesAndDecision(){
         setTimeout(()=>card.classList.remove('decision-pulse'),1600);
       }
       const ta=document.getElementById('dr');
-      if(ta){ ta.focus(); ta.placeholder='Justifica por qué apruebas, ajustas o rechazas «'+selectedAltId+'»…'; }
-      toast('Alternativa '+selectedAltId+' elegida · completa la decisión abajo','ok');
+      if(ta){ ta.focus(); ta.placeholder=blocked
+        ?('Documenta el rechazo o el ajuste exigido a «'+selectedAltId+'»…')
+        :('Justifica por qué apruebas, ajustas o rechazas «'+selectedAltId+'»…'); }
+      toast(blocked
+        ?('«'+selectedAltId+'» no cumple restricciones · no se puede aprobar')
+        :('Alternativa '+selectedAltId+' elegida · completa la decisión abajo'),
+        blocked?'warn':'ok');
     },80);
   });
 
@@ -2476,12 +2525,22 @@ function renderAlternativesAndDecision(){
   dcard.innerHTML=`
     ${lastRun?`<div class="metrics" style="border:0;padding:0 0 14px">
       <div class="metric"><div class="l">p95 sin medidas</div><div class="v bad">${lastRun.off.p95}</div></div>
-      <div class="metric"><div class="l">p95 con recomendada</div><div class="v good">${lastRun.on.p95}</div></div>
+      <div class="metric"><div class="l">p95 mejor movilidad</div><div class="v good">${lastRun.on.p95}</div></div>
       <div class="metric"><div class="l">Índice compuesto*</div><div class="v">${lastRun.conf}%</div></div>
     </div>
     <div style="margin-bottom:12px">${lastRun.feats.map(f=>`<span class="chip" style="margin:0 6px 6px 0">${f.n} ${f.v>0?'+':''}${f.v}</span>`).join('')}</div>`
     :`<p style="color:var(--muted);margin-bottom:14px;font-size:14px">Aún no hay corrida. Ajusta el contexto arriba o pulsa <b>Actualizar ahora</b> antes de decidir.</p>`}
-    <div class="evidence" style="margin-bottom:14px"><div style="display:flex;justify-content:space-between;align-items:center"><b>Recomendación actual (heurística)</b><span class="badge ${lastRun&&lastRun.on.p95<lastRun.off.p95?'ok':'high'}">${lastRun&&lastRun.on.p95<lastRun.off.p95?'FAVORABLE':'REVISAR'}</span></div><p>${lastRun?`Un modelo de regresión logística entrenado con datos <b>sintéticos</b> (no observados) estima ${Math.round(lastRun.ml.current.prob*100)}% de probabilidad en su definición interna de \u201ccongestión\u201d, y la regla operativa recomienda <strong>${lastRun.ml.ranking[0].title}</strong> con ${lastRun.ml.ranking[0].delay} min de demora esperada. Índice compuesto ${lastRun.conf}% (ver nota abajo).`:'Ejecuta una simulación para generar una recomendación sustentada en evidencia.'}</p><p style="font-size:10.5px;color:var(--muted);margin-top:6px">*El índice compuesto no es una probabilidad estadística ni un intervalo de confianza: sube o baja según cuántos factores de la interfaz están activos. No calibrado con campo.</p></div>
+    <div class="evidence" style="margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><b>Tres criterios distintos (no hay una sola «recomendada»)</b><span class="badge ${lastRun&&lastRun.on.p95<lastRun.off.p95?'ok':'high'}">${lastRun&&lastRun.on.p95<lastRun.off.p95?'FAVORABLE':'REVISAR'}</span></div>
+      ${lastRun?`<ul style="margin:10px 0 0;padding-left:18px;font-size:12.5px;line-height:1.55;color:var(--text)">
+        <li><b>Mejor por movilidad</b> (v/c corredor + hard constraints): <b>${lastRun.bestMobilityId||bestMovId||'—'}</b> · p95 con esa alt ${lastRun.on.p95}</li>
+        <li><b>Mejor por demora ML</b> (modelo sintetico): <b>${lastRun.bestDelayId||(lastRun.ml.ranking[0]&&lastRun.ml.ranking[0].id)||'—'}</b>${lastRun.ml.ranking[0]?` · ${lastRun.ml.ranking[0].delay} min est.`:''} · P(congestion interna) ${Math.round(lastRun.ml.current.prob*100)}%</li>
+        <li><b>Mejor integral</b>: vista <b>Multicriterio</b> (pesos de la entidad + restricciones).</li>
+        <li><b>Decision final</b>: la registra el <b>decisor</b> con la alternativa seleccionada (<b>${selectedAltId||'—'}</b>), no el motor en automatico.</li>
+      </ul>
+      <p style="font-size:10.5px;color:var(--muted);margin-top:8px">Indice compuesto ${lastRun.conf}%: no es probabilidad estadistica. Demo no calibrada con campo.</p>`
+      :'<p style="margin-top:8px;font-size:12.5px;color:var(--muted)">Ejecuta una simulacion para ver los indicadores por criterio.</p>'}
+    </div>
     <div class="field">
       <label>Alternativa elegida</label>
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fafafa">
@@ -2490,10 +2549,18 @@ function renderAlternativesAndDecision(){
       </div>
       <div style="margin-top:8px;font-size:11.5px;color:var(--muted)">v/c corredor (p85): <b style="color:${colorVc(alt.vcMax)}">${alt.vcMax}</b> · viaje ${alt.tiempoViaje} min · cap. residual ${alt.capacidadResidual}%${failed.length?` · <span style="color:#b91c1c">incumple ${failed.length} restricción(es)</span>`:' · cumple las 5 restricciones obligatorias'}</div>
     </div>
-    <div class="field"><label>Justificación</label><textarea id="dr" rows="3" placeholder="Por qué se aprueba, ajusta o rechaza…"></textarea></div>
+    ${failed.length?`<div class="evidence" style="margin:12px 0;border-color:#fecaca;background:#fef2f2">
+      <b style="color:#b91c1c">Aprobación bloqueada · restricciones obligatorias incumplidas</b>
+      <p style="margin-top:8px;font-size:12.5px;line-height:1.5;color:var(--text)">Esta alternativa <b>no puede aprobarse</b> hasta corregir:</p>
+      <ul style="margin:8px 0 0;padding-left:18px;font-size:12.5px;line-height:1.55;color:var(--text)">
+        ${failed.map(([k])=>`<li><b>${HARD_CONSTRAINT_LABELS[k]}</b><br><span style="color:var(--muted)">${HARD_CONSTRAINT_FIX[k]||'Reformiseñar el plan para cumplir esta condición.'}</span></li>`).join('')}
+      </ul>
+      <p style="margin-top:10px;font-size:11.5px;color:var(--muted)">Puedes <b>rechazarla</b> o <b>solicitar ajuste</b> documentando qué debe cambiar. Multicriterio también la descarta por hard constraints.</p>
+    </div>`:''}
+    <div class="field"><label>Justificación</label><textarea id="dr" rows="3" placeholder="${failed.length?'Documenta el rechazo o el ajuste exigido…':'Por qué se aprueba, ajusta o rechaza…'}"></textarea></div>
     <div id="decision-inline-error" class="inline-error" style="display:none"></div>
     <div class="row">
-      <button class="btn btn-p" id="bok" ${lastRun?'':'disabled'}>Aprobar</button>
+      <button class="btn btn-p" id="bok" ${(!lastRun||failed.length)?'disabled title="No se puede aprobar: incumple restricciones obligatorias"':''}>Aprobar</button>
       <button class="btn btn-s" id="badj" ${lastRun?'':'disabled'}>Solicitar ajuste</button>
       <button class="btn btn-s" id="bno" ${lastRun?'':'disabled'}>Rechazar</button>
     </div>
@@ -2520,7 +2587,7 @@ function renderMulti(root){
   function scoreAlt(a,k){
     if(k==='mov') return Math.round(Math.max(0,Math.min(100,(1.3-a.m.p95)/0.9*100)));
     if(k==='eme') return a.restricciones.ambulancia&&a.restricciones.emergenciaSimultanea?(a.tag==='alternativa'?55:90):20;
-    if(k==='tp') return a.tag==='recomendada'?78:a.tag==='contingencia'?66:48;
+    if(k==='tp') return a.tag==='movilidad'?78:a.tag==='contingencia'?66:48;
     if(k==='com') return a.comercio.startsWith('Impacto bajo')?82:a.comercio.startsWith('Impacto medio')?55:40;
     if(k==='seg') return a.restricciones.seguridad?(a.tag==='alternativa'?58:84):30;
     if(k==='amb') return a.barriosPerjudicados.length===0?80:a.barriosPerjudicados.length===1?60:40;
@@ -2544,7 +2611,7 @@ function renderMulti(root){
   const chosenId=selectedAltId||decisionAltId||null;
   root.innerHTML=`
     <div class="hero"><div class="eye">Sección 5 del documento de alcance</div><h1>Evaluación integral multicriterio</h1>
-      <p>Pesos configurables por la entidad. Los cambios se registran en el historial de esta sesión. Las restricciones obligatorias descalifican una alternativa aunque su puntaje sea alto.</p></div>
+      <p>Pesos configurables por la entidad. Los cambios se registran en el historial de esta sesión. Las restricciones obligatorias descalifican una alternativa aunque su puntaje sea alto. El resultado es la <b>mejor alternativa integral</b> segun tus pesos — no sustituye la decision formal del decisor.</p></div>
 
     <div class="card card-pad" style="margin-bottom:14px">
       <div class="card-h"><h2>Pesos por criterio</h2><div class="sub">Suma actual: ${totalW}% ${totalW!==100?'(se normaliza automáticamente al ponderar)':''}</div></div>
@@ -2577,7 +2644,7 @@ function renderMulti(root){
           <b style="font-size:13px">${r.a.id}</b>
           <div style="display:flex;gap:4px;flex-wrap:wrap">
             ${isChosen?'<span class="badge" style="background:#dbeafe;color:#1d4ed8">ELEGIDA EN SIMULAR</span>':''}
-            ${r.failedHard.length?'<span class="badge crit">NO CUMPLE RESTRICCIONES</span>':i===0?'<span class="badge ok">MEJOR PUNTAJE</span>':''}
+            ${r.failedHard.length?'<span class="badge crit">NO CUMPLE RESTRICCIONES</span>':i===0?'<span class="badge ok">MEJOR INTEGRAL</span>':''}
           </div>
         </div>
         <div style="font-size:12px;color:var(--muted);margin-bottom:4px;line-height:1.3">${r.a.title}</div>
@@ -2602,7 +2669,7 @@ function renderMulti(root){
       </div>`;
       }).join('')}
     </div>
-    <div class="foot">Puntajes en el navegador: <b>Motor</b> usa p95 del simulador; <b>Regla demo</b> usa tags, textos editoriales y flags de restricción. Ninguno proviene de un modelo de IA entrenado con datos de campo. Este ranking puede diferir de la «recomendada» de Simular porque usa otra lógica (pesos + hard constraints).</div>`;
+    <div class="foot">Puntajes en el navegador: <b>Motor</b> usa p95 del simulador; <b>Regla demo</b> usa tags, textos editoriales y flags de restricción. Ninguno proviene de un modelo de IA entrenado con datos de campo. «Mejor integral» (esta vista) puede diferir de «Mejor movilidad» (Simular) y del ranking ML por demora. La decision final la registra el decisor en Simular.</div>`;
 
   function applyWeights(fromReset){
     const prev={...window._critWeights};
@@ -2648,6 +2715,11 @@ function renderMulti(root){
   root.querySelectorAll('[data-use-decision]').forEach(btn=>{
     btn.addEventListener('click',()=>{
       const id=btn.dataset.useDecision;
+      const altM=alts.find(a=>a.id===id);
+      if(altM && !passesHard(altM)){
+        toast('«'+id+'» no cumple restricciones obligatorias · no se puede llevar a aprobación','warn');
+        return;
+      }
       selectedAltId=id;
       toast('Alternativa '+id+' elegida · completa la decisión en Simular','ok');
       view='ops';
@@ -2680,6 +2752,15 @@ function decide(kind){
   if(!lastRun){toast('Corre una simulación antes','warn');return}
   const alts=buildAlternatives();
   const alt=alts.find(a=>a.id===selectedAltId)||alts[0];
+  // Barrera dura: nunca aprobar si incumple restricciones obligatorias (coherente con Multicriterio)
+  const fails=hardFails(alt);
+  if(kind==='aprobada' && fails.length){
+    const msg='No se puede aprobar «'+alt.id+'»: incumple restricciones obligatorias. '+
+      fails.map(k=>HARD_CONSTRAINT_LABELS[k]).join('; ')+'.';
+    if(errBox){errBox.textContent=msg+' Corrige el plan o elige Rechazar / Solicitar ajuste.';errBox.style.display='block';}
+    toast('Aprobación bloqueada · restricciones obligatorias','warn');
+    return;
+  }
   decision=kind;
   decisionReason=reason;
   decisionAltId=alt.id;
@@ -2800,7 +2881,7 @@ function buildSaludHTML(){
 function buildSeguimientoHTML(){
   const alts=buildAlternatives();
   // Preferir alternativa de la decisión / elección en Simular; si no, la recomendada
-  let ref=null, refNote='Alternativa recomendada por el motor (heurística)';
+  let ref=null, refNote='Mejor por movilidad (v/c corredor)';
   if(decisionAltId){
     ref=alts.find(a=>a.id===decisionAltId)||null;
     if(ref) refNote='Alternativa de la decisión registrada en esta sesión ('+(decision||'sin estado')+')';
@@ -2810,8 +2891,8 @@ function buildSeguimientoHTML(){
     if(ref) refNote='Alternativa elegida en Simular (aún sin decisión formal)';
   }
   if(!ref){
-    ref=alts.find(a=>a.tag==='recomendada')||alts[0];
-    refNote='Alternativa recomendada por el motor (heurística)';
+    ref=pickBestMobility(alts)||alts[0];
+    refNote='Mejor por movilidad (v/c corredor)';
   }
   const rows=[
     {k:'p95',label:'p95 de v/c (red)',val:ref.m.p95},
