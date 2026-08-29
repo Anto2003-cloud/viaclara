@@ -932,6 +932,687 @@ button,input,select,textarea{font:inherit}
 #decision-card.decision-anchor{scroll-margin-top:72px}
 @media(max-width:800px){.alt-table{min-width:480px}}
 
+
+/* ===== V4 PRESENTATION POLISH — visual only, preserves existing logic ===== */
+:root{
+  --vc-radius:14px;
+  --vc-shadow:0 8px 28px rgba(0,0,0,.055);
+}
+.hero.ops-hero{
+  margin:16px 0 12px;
+  padding:4px 2px 0;
+}
+.hero.ops-hero .eye{
+  color:var(--blue);
+  font-weight:650;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+}
+.hero.ops-hero h1{
+  font-size:32px;
+  letter-spacing:-.04em;
+}
+.hero.ops-hero p{max-width:760px}
+.ops-status{
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:10px 18px;
+  border-radius:14px !important;
+  border:1px solid rgba(0,0,0,.08) !important;
+  background:#fff !important;
+  box-shadow:0 2px 12px rgba(0,0,0,.035);
+}
+.ops-status .live{font-size:13px}
+.ops-status .meta{flex:1;min-width:220px}
+.ops-overline{
+  display:flex;align-items:end;justify-content:space-between;gap:12px;
+  margin:18px 0 10px;
+}
+.ops-overline h2{font-size:18px;font-weight:650;letter-spacing:-.02em}
+.ops-overline p{font-size:12px;color:var(--muted);margin-top:3px}
+.ops-kpis{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:12px;
+  margin:0 0 16px;
+}
+.ops-kpi{
+  background:#fff;border:1px solid var(--line);border-radius:var(--vc-radius);
+  padding:14px 16px;min-width:0;box-shadow:var(--vc-shadow);
+}
+.ops-kpi .k-label{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.035em}
+.ops-kpi .k-value{font-family:var(--mono);font-size:24px;line-height:1.05;font-weight:600;letter-spacing:-.03em;margin-top:7px}
+.ops-kpi .k-note{font-size:11px;color:var(--muted);margin-top:5px;line-height:1.3}
+.ops-kpi.state .k-value{font-family:var(--font);font-size:17px;letter-spacing:-.01em}
+.ops-kpi.state.good .k-value{color:var(--green)}
+.ops-kpi.state.warn .k-value{color:var(--amber)}
+.ops-kpi.state.crit .k-value{color:var(--red)}
+.ops-grid{
+  grid-template-columns:minmax(280px,.82fr) minmax(0,1.7fr);
+  gap:16px;
+}
+.ops-map-card{order:1;border-radius:16px;box-shadow:var(--vc-shadow)}
+.ops-side{order:2;border-radius:16px;box-shadow:var(--vc-shadow)}
+.ops-map-card .map.lg{height:min(540px,58vh)}
+.ops-map-card .metrics{display:none}
+.ops-side-head{padding:16px 18px 12px}
+.ops-side-foot{padding:12px 16px 16px}
+.ops-results{
+  border-radius:16px !important;
+  box-shadow:var(--vc-shadow);
+}
+.ops-results .card-h{align-items:center}
+.ops-results .card-h h2{font-size:18px}
+.section-divider{
+  margin-top:26px !important;
+  padding-top:0 !important;
+}
+.section-divider h2{font-size:18px}
+.decision-sticky-cta{
+  border-radius:16px !important;
+  box-shadow:0 8px 28px rgba(0,0,0,.07);
+}
+.decision-anchor{
+  border-radius:16px !important;
+  box-shadow:var(--vc-shadow);
+}
+.ops-history{border-radius:16px !important;box-shadow:var(--vc-shadow)}
+.map-legend{background:#fafafa}
+.action-card{border-radius:14px;box-shadow:0 3px 14px rgba(0,0,0,.035)}
+.action-card.prio1{box-shadow:inset 3px 0 0 var(--red),0 3px 14px rgba(0,0,0,.035)}
+.action-card.prio2{box-shadow:inset 3px 0 0 var(--amber),0 3px 14px rgba(0,0,0,.035)}
+.action-card.prio3{box-shadow:inset 3px 0 0 var(--blue),0 3px 14px rgba(0,0,0,.035)}
+.btn{min-height:40px}
+@media(max-width:900px){
+  .ops-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .ops-grid{grid-template-columns:1fr}
+  .ops-map-card{order:1}.ops-side{order:2}
+}
+@media(max-width:600px){
+  .hero.ops-hero h1{font-size:27px}
+  .hero.ops-hero p{font-size:13px}
+  .ops-status{padding:11px 13px !important}
+  .ops-status .meta{min-width:0;flex-basis:100%}
+  .ops-kpis{grid-template-columns:1fr 1fr;gap:8px}
+  .ops-kpi{padding:12px 13px}
+  .ops-kpi .k-value{font-size:20px}
+  .ops-kpi.state .k-value{font-size:15px}
+  .ops-overline{margin-top:14px}
+  .ops-map-card .map.lg{height:52vh;min-height:330px}
+  .ops-side{max-height:none !important}
+  .action-card{grid-template-columns:1fr;gap:9px}
+  .action-card .acts{flex-direction:row;flex-wrap:wrap}
+  .action-card .acts button{flex:1;min-width:120px}
+}
+@media(max-width:380px){
+  .ops-kpis{grid-template-columns:1fr}
+  .ops-kpi .k-value{font-size:21px}
+  .ops-map-card .map.lg{height:48vh;min-height:300px}
+}
+
+
+/* =========================================================
+   VíaClara — Rediseño de presentación V4.1
+   Solo capa visual. No modifica lógica ni IDs existentes.
+   ========================================================= */
+
+:root{
+  --vc-bg:#f5f7fa;
+  --vc-card:#ffffff;
+  --vc-border:#e3e7ed;
+  --vc-ink:#172033;
+  --vc-muted:#667085;
+  --vc-blue:#1769e0;
+  --vc-blue-soft:#eef5ff;
+  --vc-radius:16px;
+  --vc-shadow:0 5px 22px rgba(16,24,40,.055);
+}
+
+/* Fondo y ancho: más sensación de plataforma, menos "página encajada" */
+html,body{
+  background:var(--vc-bg) !important;
+  color:var(--vc-ink);
+}
+.wrap{
+  max-width:1320px !important;
+  padding:18px 24px 52px !important;
+}
+
+/* Barra superior más limpia */
+.topbar{
+  min-height:60px !important;
+  padding-left:max(18px,calc((100vw - 1320px)/2 + 4px)) !important;
+  padding-right:max(18px,calc((100vw - 1320px)/2 + 4px)) !important;
+  background:rgba(255,255,255,.94) !important;
+  box-shadow:0 1px 0 rgba(16,24,40,.07),0 4px 18px rgba(16,24,40,.035);
+}
+.top-spacer{
+  height:calc(60px + env(safe-area-inset-top,0px)) !important;
+}
+.top-left{
+  color:var(--vc-ink) !important;
+  font-size:15px !important;
+}
+.top-left .mark{
+  width:30px !important;
+  height:30px !important;
+  border-radius:9px !important;
+}
+.navpill{
+  background:#f2f4f7 !important;
+  padding:4px !important;
+  max-width:620px !important;
+  margin:auto !important;
+}
+.navpill button{
+  min-height:34px !important;
+  padding:7px 15px !important;
+  font-size:12px !important;
+}
+.navpill button.on{
+  background:#fff !important;
+  box-shadow:0 1px 5px rgba(16,24,40,.10) !important;
+}
+.top-right .ghost{
+  font-size:12px !important;
+}
+
+/* Cabecera de operación */
+.hero.ops-hero{
+  margin:8px 0 14px !important;
+  padding:0 !important;
+}
+.hero.ops-hero .eye{
+  font-size:11px !important;
+  letter-spacing:.08em !important;
+  color:var(--vc-blue) !important;
+}
+.hero.ops-hero h1{
+  font-size:34px !important;
+  line-height:1.08 !important;
+  color:#111827 !important;
+}
+.hero.ops-hero p{
+  max-width:780px !important;
+  color:var(--vc-muted) !important;
+}
+
+/* Estado superior más parecido a un centro de control */
+.ops-status{
+  margin-bottom:18px !important;
+  padding:11px 15px !important;
+  border-radius:13px !important;
+  background:#fff !important;
+  border:1px solid var(--vc-border) !important;
+  box-shadow:0 2px 10px rgba(16,24,40,.035) !important;
+}
+.ops-status .live{
+  color:#344054 !important;
+}
+
+/* KPI: menos "tarjetas genéricas", más indicadores */
+.ops-overline{
+  margin:22px 0 11px !important;
+}
+.ops-overline h2{
+  font-size:19px !important;
+  color:#111827 !important;
+}
+.ops-overline p{
+  font-size:12px !important;
+  color:var(--vc-muted) !important;
+}
+.ops-kpis{
+  gap:12px !important;
+  margin-bottom:22px !important;
+}
+.ops-kpi{
+  border:1px solid var(--vc-border) !important;
+  border-radius:15px !important;
+  box-shadow:var(--vc-shadow) !important;
+  padding:15px 17px !important;
+  background:#fff !important;
+}
+.ops-kpi .k-label{
+  font-size:10.5px !important;
+  letter-spacing:.055em !important;
+}
+.ops-kpi .k-value{
+  font-size:25px !important;
+  color:#182230;
+}
+.ops-kpi.state{
+  position:relative;
+  overflow:hidden;
+}
+.ops-kpi.state:before{
+  content:"";
+  position:absolute;
+  left:0;top:0;bottom:0;width:4px;
+  background:var(--green);
+}
+.ops-kpi.state.warn:before{background:var(--amber)}
+.ops-kpi.state.crit:before{background:var(--red)}
+
+/* Situación actual: MAPA GRANDE + contexto estrecho.
+   Esta es la corrección principal del diseño anterior. */
+.ops-grid{
+  grid-template-columns:minmax(0,1.85fr) minmax(300px,.82fr) !important;
+  gap:18px !important;
+  align-items:stretch !important;
+}
+.ops-map-card{
+  order:1 !important;
+  border-radius:18px !important;
+  border:1px solid var(--vc-border) !important;
+  box-shadow:var(--vc-shadow) !important;
+  background:#fff !important;
+  overflow:hidden !important;
+}
+.ops-side{
+  order:2 !important;
+  border-radius:18px !important;
+  border:1px solid var(--vc-border) !important;
+  box-shadow:var(--vc-shadow) !important;
+  background:#fff !important;
+  max-height:min(540px,58vh) !important;
+}
+.ops-map-card .map.lg{
+  height:min(540px,58vh) !important;
+  min-height:430px !important;
+}
+.ops-map-card .map-wrap{
+  background:#e8eef4;
+}
+.ops-map-card .map-alert-banner{
+  left:14px !important;
+  top:14px !important;
+  right:auto !important;
+  max-width:calc(100% - 28px) !important;
+  border-radius:10px !important;
+  box-shadow:0 3px 14px rgba(16,24,40,.14) !important;
+}
+.map-legend{
+  padding:10px 14px !important;
+  gap:7px 15px !important;
+  font-size:11px !important;
+}
+.ops-map-card .metrics{
+  display:flex !important;
+  padding:10px 14px !important;
+  background:#fff !important;
+}
+.ops-map-card .metric{
+  min-width:90px !important;
+}
+.ops-map-card .metric .l{
+  font-size:10px !important;
+}
+.ops-map-card .metric .v{
+  font-size:18px !important;
+}
+
+/* Contexto: panel compacto, no protagonista */
+.ops-side-head{
+  padding:16px 17px 12px !important;
+}
+.ops-side-head h2{
+  font-size:17px !important;
+}
+.ops-side-body{
+  padding:8px 12px 12px !important;
+}
+.ops-sec-label{
+  margin:9px 4px 5px !important;
+  font-size:10px !important;
+  letter-spacing:.06em !important;
+}
+.ops-side .item{
+  padding:10px 9px !important;
+  border-radius:10px !important;
+}
+.ops-side .item b{
+  font-size:12.5px !important;
+}
+.ops-side .item small{
+  font-size:11px !important;
+}
+.ops-side-foot{
+  padding:10px 13px 13px !important;
+}
+.ops-side-foot .btn{
+  min-height:38px !important;
+}
+
+/* Recomendación: convertirla en protagonista después del mapa */
+.ops-results{
+  margin-top:20px !important;
+  border-radius:18px !important;
+  border:1px solid var(--vc-border) !important;
+  box-shadow:var(--vc-shadow) !important;
+  background:#fff !important;
+}
+.ops-results .card-h{
+  padding-bottom:3px;
+}
+.ops-results .card-h h2{
+  font-size:20px !important;
+  color:#111827 !important;
+}
+.action-card{
+  border-radius:14px !important;
+  border:1px solid var(--vc-border) !important;
+  background:#fff !important;
+  box-shadow:0 2px 10px rgba(16,24,40,.035) !important;
+}
+.action-card.prio1{
+  box-shadow:inset 4px 0 0 var(--red),0 2px 10px rgba(16,24,40,.035) !important;
+}
+.action-card.prio2{
+  box-shadow:inset 4px 0 0 var(--amber),0 2px 10px rgba(16,24,40,.035) !important;
+}
+.action-card.prio3{
+  box-shadow:inset 4px 0 0 var(--vc-blue),0 2px 10px rgba(16,24,40,.035) !important;
+}
+
+/* CTA de decisión */
+.decision-sticky-cta{
+  border-radius:16px !important;
+  background:#172033 !important;
+  box-shadow:0 10px 30px rgba(16,24,40,.12) !important;
+}
+.decision-sticky-cta .btn{
+  min-height:42px !important;
+  border-radius:10px !important;
+}
+
+/* Tablas */
+.alt-table-wrap{
+  border-radius:14px !important;
+  border-color:var(--vc-border) !important;
+  box-shadow:0 2px 10px rgba(16,24,40,.025);
+}
+.alt-table th{
+  background:#f8fafc !important;
+}
+
+/* Responsive */
+@media(max-width:1050px){
+  .top-left{font-size:13px !important}
+  .top-right .ghost{padding:6px !important}
+  .navpill button{padding:7px 10px !important}
+  .ops-grid{
+    grid-template-columns:minmax(0,1.5fr) minmax(270px,.9fr) !important;
+  }
+}
+@media(max-width:900px){
+  .wrap{
+    padding-left:16px !important;
+    padding-right:16px !important;
+  }
+  .top-left{display:none !important}
+  .navpill{
+    max-width:none !important;
+  }
+  .top-right{
+    gap:2px !important;
+  }
+  .top-right .ghost{
+    font-size:11px !important;
+  }
+  .ops-kpis{
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+  }
+  .ops-grid{
+    grid-template-columns:1fr !important;
+  }
+  .ops-map-card{order:1 !important}
+  .ops-side{order:2 !important}
+  .ops-map-card .map.lg{
+    height:52vh !important;
+    min-height:350px !important;
+  }
+  .ops-side{
+    max-height:none !important;
+  }
+}
+@media(max-width:600px){
+  .topbar{
+    min-height:54px !important;
+    padding-left:10px !important;
+    padding-right:10px !important;
+  }
+  .top-spacer{
+    height:calc(54px + env(safe-area-inset-top,0px)) !important;
+  }
+  .navpill{
+    overflow-x:auto !important;
+    justify-content:flex-start !important;
+  }
+  .navpill button{
+    white-space:nowrap !important;
+    flex:0 0 auto !important;
+  }
+  .top-right .ghost{
+    display:none !important;
+  }
+  .hero.ops-hero h1{
+    font-size:28px !important;
+  }
+  .ops-kpis{
+    gap:8px !important;
+  }
+  .ops-kpi{
+    padding:12px !important;
+  }
+  .ops-kpi .k-value{
+    font-size:21px !important;
+  }
+  .ops-map-card .map.lg{
+    height:52vh !important;
+    min-height:310px !important;
+  }
+  .ops-map-card .metrics{
+    flex-wrap:wrap !important;
+  }
+}
+@media(max-width:380px){
+  .ops-kpis{
+    grid-template-columns:1fr !important;
+  }
+  .ops-map-card .map.lg{
+    min-height:285px !important;
+  }
+}
+
+
+/* FIX V4.1 — navegación: SIMULAR siempre visible */
+.topbar{
+  overflow:visible !important;
+}
+.navpill{
+  display:flex !important;
+  align-items:center !important;
+  justify-content:flex-start !important;
+  flex:1 1 auto !important;
+  min-width:0 !important;
+  overflow-x:auto !important;
+  overflow-y:hidden !important;
+  scrollbar-width:none !important;
+}
+.navpill::-webkit-scrollbar{display:none !important}
+.navpill button{
+  display:flex !important;
+  flex:0 0 auto !important;
+  white-space:nowrap !important;
+  visibility:visible !important;
+  opacity:1 !important;
+}
+.navpill button:first-child{
+  display:flex !important;
+  visibility:visible !important;
+  opacity:1 !important;
+}
+@media(max-width:900px){
+  .topbar{
+    gap:4px !important;
+  }
+  .navpill{
+    order:1 !important;
+    margin:0 !important;
+  }
+  .top-right{
+    order:2 !important;
+    flex:0 0 auto !important;
+  }
+}
+@media(max-width:600px){
+  .navpill{
+    max-width:calc(100vw - 20px) !important;
+  }
+  .navpill button{
+    padding:7px 12px !important;
+    font-size:12px !important;
+  }
+}
+
+
+/* FIX V4.2 — botón SIMULAR visible: el estado activo tenía texto blanco
+   sobre fondo blanco. Además, se libera espacio en el header. */
+.navpill button.on,
+.navpill button[data-v="ops"].on{
+  background:#1769e0 !important;
+  color:#fff !important;
+  box-shadow:0 2px 8px rgba(23,105,224,.22) !important;
+  visibility:visible !important;
+  opacity:1 !important;
+  display:flex !important;
+}
+.navpill button[data-v="ops"]{
+  position:relative !important;
+  z-index:2 !important;
+}
+@media(max-width:1100px){
+  .top-right .ghost{
+    display:none !important;
+  }
+  .topbar{
+    gap:8px !important;
+  }
+  .navpill{
+    max-width:none !important;
+    margin:0 !important;
+  }
+}
+@media(max-width:800px){
+  .topbar{
+    padding-left:10px !important;
+    padding-right:10px !important;
+  }
+  .top-left{
+    display:none !important;
+  }
+  .navpill{
+    width:100% !important;
+    flex:1 1 100% !important;
+  }
+}
+
+
+/* ===== Datos · presentación ejecutiva para Alcaldía ===== */
+.datos-hero{margin-bottom:16px}
+.datos-hero p{max-width:760px}
+.datos-summary-pro{gap:10px;margin-bottom:12px}
+.datos-summary-pro .datos-sum-card{min-height:108px;padding:14px 16px;position:relative;overflow:hidden}
+.datos-summary-pro .ds-top{display:flex;align-items:center;gap:7px}
+.datos-summary-pro .ds-dot{width:7px;height:7px;border-radius:50%;background:#94a3b8;display:inline-block}
+.datos-summary-pro .datos-real .ds-dot{background:var(--green)}
+.datos-summary-pro .datos-sim .ds-dot{background:#d97706}
+.datos-summary-pro .datos-no .ds-dot{background:var(--red)}
+.datos-summary-pro .datos-engine .ds-dot{background:var(--blue)}
+.datos-summary-pro .ds-v{font-size:27px;margin-top:9px}
+.datos-summary-pro .ds-h{max-width:220px}
+.datos-engine .ds-engine-v{font-size:14px;line-height:1.3;letter-spacing:0}
+.datos-engine .ds-engine-v span{font-family:inherit;font-size:11px;color:var(--muted);font-weight:500}
+.datos-readme{display:flex;gap:11px;align-items:flex-start;padding:12px 15px;border:1px solid #dbe7f5;background:#f6f9fd;border-radius:11px;margin-bottom:14px;color:var(--text)}
+.datos-readme .dr-icon{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#e8f1ff;color:var(--blue);font-size:12px;font-weight:800;flex-shrink:0}
+.datos-readme b{display:block;font-size:12.5px;margin-bottom:2px}
+.datos-readme span{display:block;color:var(--muted);font-size:11.5px;line-height:1.45}
+.datos-toc-pro{margin-bottom:20px;padding:4px;border:1px solid var(--line);background:#f8f8f8}
+.datos-toc-pro a{display:flex;align-items:center;gap:6px}
+.datos-toc-pro a span{font-family:var(--mono);font-size:9px;color:#8b8b90}
+.datos-toc-pro a:hover{transform:translateY(-1px)}
+.datos-section-head{margin:0 0 9px;padding:0 2px}
+.section-kicker{font-size:9.5px;font-weight:750;letter-spacing:.09em;color:#7a7a80;margin-bottom:3px}
+.datos-section-head h2{font-size:19px}
+.datos-source-card{padding:0 18px}
+.datos-source-head{display:flex;justify-content:space-between;align-items:center;padding:14px 0 9px;border-bottom:1px solid var(--line);font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.datos-source-row{display:flex;gap:14px;align-items:center;justify-content:space-between;padding:13px 0;border-bottom:1px solid var(--line);min-width:0}
+.datos-source-row:last-child{border-bottom:0}
+.source-main{min-width:0;flex:1}
+.source-title{display:flex;align-items:center;gap:8px;font-size:13px}
+.source-status-dot{width:7px;height:7px;border-radius:50%;flex:0 0 auto}
+.source-status-dot.ok{background:var(--green)} .source-status-dot.pend{background:#2563eb} .source-status-dot.crit{background:var(--red)}
+.source-desc{font-size:11.5px;color:var(--muted);line-height:1.4;margin:3px 0 0 15px;max-width:900px}
+.datos-motor-pro{margin-top:14px}
+.datos-card-head{margin-bottom:14px}
+.datos-card-head h2{font-size:19px}
+.datos-card-head p{font-size:12px;color:var(--muted);margin-top:4px}
+.motor-count{font-family:var(--mono);font-size:14px;font-weight:700;white-space:nowrap;text-align:right}
+.motor-count small{display:block;font-family:inherit;font-size:9px;font-weight:500;color:var(--muted);margin-top:4px}
+.datos-cap-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}
+.datos-cap-item{border:1px solid var(--line);border-radius:10px;padding:12px 13px;min-width:0;display:flex;flex-direction:column;min-height:128px}
+.cap-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px}
+.cap-index{font-family:var(--mono);font-size:9px;color:#a1a1a6}
+.cap-state{font-size:9px;font-weight:750;text-transform:uppercase;letter-spacing:.04em;padding:3px 7px;border-radius:5px}
+.cap-state.ok{background:#ecfdf5;color:#047857}.cap-state.crit{background:#fef2f2;color:#b91c1c}.cap-state.high{background:#fff7ed;color:#c2410c}
+.datos-cap-item>b{font-size:12px;line-height:1.35}
+.cap-desc{font-size:10.5px;color:var(--text);margin-top:5px;line-height:1.4}
+.cap-note{font-size:10.5px;color:var(--muted);font-style:italic;line-height:1.4;margin-top:auto;padding-top:7px}
+.palette-grid-pro{grid-template-columns:repeat(5,minmax(0,1fr));gap:7px}
+.palette-item-pro{padding:8px 9px;border-radius:8px;gap:7px}
+.palette-item-pro .palette-label{font-size:10px}
+.palette-item-pro .palette-hex{font-size:8.5px}
+.palette-item-pro .palette-swatch{width:13px;height:13px;border-radius:4px}
+.datos-limits-pro{background:#fbfbfb}
+.datos-limit-title{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:13px}
+.datos-limit-title h2{font-size:19px}
+.limit-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.limit-grid>div{padding:11px 12px;border:1px solid var(--line);border-radius:9px;background:#fff}
+.limit-grid span{display:block;font-family:var(--mono);font-size:9px;color:#9a9aa0;margin-bottom:8px}
+.limit-grid b{font-size:11.5px}
+.limit-grid p{font-size:10.5px;color:var(--muted);line-height:1.4;margin-top:4px}
+@media(max-width:900px){
+  .palette-grid-pro{grid-template-columns:repeat(3,1fr)}
+  .limit-grid{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:700px){
+  .datos-cap-grid{grid-template-columns:1fr}
+  .palette-grid-pro{grid-template-columns:repeat(2,1fr)}
+  .motor-count{display:none}
+  .datos-source-row{align-items:flex-start}
+}
+@media(max-width:520px){
+  .datos-summary-pro{grid-template-columns:1fr 1fr}
+  .datos-summary-pro .datos-sum-card{min-height:96px;padding:11px 12px}
+  .datos-summary-pro .ds-v{font-size:23px}
+  .datos-summary-pro .ds-h{font-size:10px}
+  .limit-grid{grid-template-columns:1fr}
+  .palette-grid-pro{grid-template-columns:1fr 1fr}
+  .datos-toc-pro{overflow-x:auto;flex-wrap:nowrap}
+  .datos-toc-pro a{flex:0 0 auto}
+}
+
+</style>
+
+<style>
+/* V4 — solo ajustes 2, 3 y 4 de Multicriterio */
+.multi-contrib{height:7px !important;opacity:.72;margin-top:7px !important;margin-bottom:5px !important}
+.multi-reading{font-size:10px;color:var(--muted);line-height:1.35;margin:7px 0 2px;white-space:normal}
+.multi-reading b{font-family:var(--mono);font-weight:650;color:var(--text)}
+.demo-badge{display:inline-block;margin-top:10px;padding:5px 9px;border:1px solid rgba(0,0,0,.10);border-radius:999px;font-size:10px;font-weight:700;letter-spacing:.035em;opacity:.72}
+@media(max-width:700px){.demo-badge{display:block;width:max-content}}
 </style>
 </head>
 <body>
@@ -1743,6 +2424,18 @@ function renderOps(root){
     </div>
     <div class="ops-recalc" id="ops-recalc"><span class="spin"></span> IA recalculando flujo…</div>
 
+    <div class="ops-overline">
+      <div><h2>Estado de movilidad</h2><p>Indicadores clave para entender la situación de la red.</p></div>
+      <span class="badge ${statusCls==='crit'?'crit':statusCls==='warn'?'high':'ok'}">${level==='crit'?'CRÍTICO':level==='warn'?'ATENCIÓN':'MONITOREO'}</span>
+    </div>
+    <div class="ops-kpis">
+      <div class="ops-kpi state ${level==='crit'?'crit':level==='warn'?'warn':'good'}"><div class="k-label">Estado general</div><div class="k-value">${level==='crit'?'Crítico':level==='warn'?'Atención':'Estable'}</div><div class="k-note">Operación ${level==='ok'?'dentro de parámetros':'bajo revisión'}</div></div>
+      <div class="ops-kpi"><div class="k-label">Congestión p95</div><div class="k-value">${m.p95}</div><div class="k-note">Relación volumen / capacidad</div></div>
+      <div class="ops-kpi"><div class="k-label">Incidentes / alertas</div><div class="k-value">${actions.length}</div><div class="k-note">Acciones prioritarias detectadas</div></div>
+      <div class="ops-kpi"><div class="k-label">Riesgo IA</div><div class="k-value ${riskPct!=null&&riskPct>=70?'bad':''}">${riskPct!=null?riskPct+'%':'—'}</div><div class="k-note">Índice experimental del escenario</div></div>
+    </div>
+
+    <div class="ops-overline"><div><h2>Situación actual</h2><p>El mapa muestra dónde se concentra el impacto y permite explorar los corredores.</p></div></div>
     <div class="ops-grid">
       <div class="card ops-side">
         <div class="ops-side-head">
@@ -1784,9 +2477,9 @@ function renderOps(root){
       </div>
     </div>
 
-    <div class="card card-pad ops-results" id="ops-results" style="margin-top:14px">
-      <div class="card-h"><div><h2>Acciones recomendadas</h2>
-        <div class="sub">Solo opciones filtradas por la IA · listas para decidir</div></div>
+    <div class="card card-pad ops-results" id="ops-results" style="margin-top:18px">
+      <div class="card-h"><div><h2>Recomendación operativa</h2>
+        <div class="sub">La IA prioriza opciones; el responsable conserva la decisión final.</div></div>
         ${level==='ok'?'<span class="badge ok">SIN ALERTA</span>':level==='warn'?'<span class="badge high">REVISAR</span>':'<span class="badge crit">URGENTE</span>'}
       </div>
       ${!R?`<div class="calm-note">IA iniciando monitoreo continuo…</div>`:
@@ -1814,11 +2507,11 @@ function renderOps(root){
       </div>`:''}
     </div>
 
-    <div class="section-divider" style="margin-top:22px"><h2>Alternativas de desvío</h2><p>Comparación compacta · detalle al expandir. Cifras del motor; barrios/comercio son <b>síntesis editorial de demo</b>.</p></div>
+    <div class="section-divider" style="margin-top:26px"><h2>Alternativas</h2><p>Comparación compacta · detalle al expandir. Cifras del motor; barrios/comercio son <b>síntesis editorial de demo</b>.</p></div>
     <div id="alt-grid"></div>
     <div class="decision-sticky-cta" id="decision-cta"><div class="dst-txt"><b>Registro de decisión</b><br><span style="opacity:.8;font-size:12px">La decisión final la toma el decisor — no el motor.</span></div><button type="button" class="btn" id="go-decision">Ir a registrar decisión</button></div>
 
-    <div class="section-divider" style="margin-top:22px"><h2>Registro de decisión simulada</h2><p>Sin análisis de red no hay decisión. La justificación queda en bitácora de esta sesión.</p></div>
+    <div class="section-divider" style="margin-top:26px"><h2>Decisión del responsable</h2><p>Sin análisis de red no hay decisión. La justificación queda en bitácora de esta sesión.</p></div>
     <div class="card card-pad decision-anchor" id="decision-card"></div>
 
     <div class="card ops-history" id="ops-hist-card">
@@ -2636,7 +3329,9 @@ function renderMulti(root){
   const chosenId=selectedAltId||decisionAltId||null;
   root.innerHTML=`
     <div class="hero"><div class="eye">Sección 5 del documento de alcance</div><h1>Evaluación integral multicriterio</h1>
-      <p>Pesos configurables por la entidad. Los cambios se registran en el historial de esta sesión. Las restricciones obligatorias descalifican una alternativa aunque su puntaje sea alto. El resultado es la <b>mejor alternativa integral</b> segun tus pesos — no sustituye la decision formal del decisor.</p></div>
+      <p>Pesos configurables por la entidad. Los cambios se registran en el historial de esta sesión. Las restricciones obligatorias descalifican una alternativa aunque su puntaje sea alto. El resultado es la <b>mejor alternativa integral</b> segun tus pesos — no sustituye la decision formal del decisor.</p>
+      <span class="demo-badge">MODO DEMOSTRACIÓN · DATOS SINTÉTICOS</span>
+    </div>
 
     <div class="card card-pad" style="margin-bottom:14px">
       <div class="card-h"><h2>Pesos por criterio</h2><div class="sub">Suma actual: ${totalW}% ${totalW!==100?'(se normaliza automáticamente al ponderar)':''}</div></div>
@@ -2674,6 +3369,9 @@ function renderMulti(root){
         </div>
         <div style="font-size:12px;color:var(--muted);margin-bottom:4px;line-height:1.3">${r.a.title}</div>
         <div style="font-size:26px;font-weight:650;font-family:var(--mono)">${r.weighted}<span style="font-size:13px;color:var(--muted);font-weight:500">/100</span></div>
+        <div class="multi-reading" aria-label="Resumen numérico de criterios">
+          ${r.scores.map(s=>`<span><b>${s.k}</b> ${s.score}</span>`).join(' · ')}
+        </div>
         <div class="multi-contrib" title="Aporte de cada criterio al total ponderado" aria-hidden="true">
           ${r.scores.map(s=>`<i style="flex:${Math.max(0.01,s.contrib)};background:${s.color};opacity:${r.failedHard.length?0.45:1}"></i>`).join('')}
         </div>
@@ -2689,7 +3387,7 @@ function renderMulti(root){
         </div>
         ${r.failedHard.length?`<div style="font-size:11px;color:#b91c1c;background:#fef2f2;border-radius:8px;padding:8px 10px;margin-top:6px">Incumple: ${r.failedHard.join('; ')}</div>`:''}
         <button type="button" class="btn ${isChosen?'btn-p':'btn-s'}" style="width:100%;margin-top:10px" data-use-decision="${r.a.id}" ${r.failedHard.length?'disabled title="No cumple restricciones obligatorias"':''}>
-          ${isChosen?'✓ Elegida · ir a decidir':'Usar en decisión'}
+          ${isChosen?'✓ Elegida · ir a decidir':'Seleccionar para análisis'}
         </button>
       </div>`;
       }).join('')}
@@ -2999,53 +3697,89 @@ function renderDatos(root){
     'Alternativa descartada':PALETTE.descartada
   };
   root.innerHTML=`
-    <div class="hero"><div class="eye">Gobierno de datos, salud vial y seguimiento</div>
-      <h1>Datos, auditoría y límites</h1>
-      <p>Separación explícita entre lo real, lo simulado y lo no disponible. Usa el índice para saltar a cada bloque.</p></div>
-
-    <div class="datos-summary" aria-label="Resumen de fuentes y capacidades">
-      <div class="datos-sum-card"><div class="ds-k">Fuentes reales</div><div class="ds-v" style="color:var(--green)">${nReal}</div><div class="ds-h">Cartografía OSM</div></div>
-      <div class="datos-sum-card"><div class="ds-k">Simuladas</div><div class="ds-v" style="color:#b45309">${nSim}</div><div class="ds-h">Tráfico, obras, ML, equipamientos</div></div>
-      <div class="datos-sum-card"><div class="ds-k">No disponibles</div><div class="ds-v" style="color:var(--red)">${nNo}</div><div class="ds-h">Aforos y cámaras</div></div>
-      <div class="datos-sum-card"><div class="ds-k">Motor</div><div class="ds-v" style="font-size:16px;margin-top:6px">${nAvail}·${nPart}·${nBlock}</div><div class="ds-h">Disponible · parcial · bloqueada</div></div>
+    <div class="hero datos-hero">
+      <div class="eye">Gobierno de datos · trazabilidad · límites del prototipo</div>
+      <h1>Datos y transparencia</h1>
+      <p>VíaClara separa claramente lo real, lo simulado y lo que todavía no está disponible. Esta pantalla explica qué alimenta la demo y qué puede calcular hoy el motor.</p>
     </div>
 
-    <nav class="datos-toc" aria-label="Secciones de Datos">
-      <a href="#datos-fuentes">Fuentes</a>
-      <a href="#datos-motor">Motor</a>
-      <a href="#datos-paleta">Paleta</a>
-      <a href="#datos-limites">Límites</a>
-      <a href="#datos-salud">Salud vial</a>
-      <a href="#datos-seguimiento">Seguimiento</a>
+    <div class="datos-summary datos-summary-pro">
+      <div class="datos-sum-card datos-real">
+        <div class="ds-top"><span class="ds-dot"></span><span class="ds-k">Fuentes reales</span></div>
+        <div class="ds-v">${nReal}</div><div class="ds-h">Cartografía vial · OpenStreetMap</div>
+      </div>
+      <div class="datos-sum-card datos-sim">
+        <div class="ds-top"><span class="ds-dot"></span><span class="ds-k">Simuladas</span></div>
+        <div class="ds-v">${nSim}</div><div class="ds-h">Tráfico · obras · ML · equipamientos</div>
+      </div>
+      <div class="datos-sum-card datos-no">
+        <div class="ds-top"><span class="ds-dot"></span><span class="ds-k">No disponibles</span></div>
+        <div class="ds-v">${nNo}</div><div class="ds-h">Aforos y cámaras institucionales</div>
+      </div>
+      <div class="datos-sum-card datos-engine">
+        <div class="ds-top"><span class="ds-dot"></span><span class="ds-k">Estado del motor</span></div>
+        <div class="ds-v ds-engine-v">${nAvail}<span> disponible</span> · ${nPart}<span> parcial</span> · ${nBlock}<span> bloqueada</span></div>
+        <div class="ds-h">Capacidades declaradas en esta versión</div>
+      </div>
+    </div>
+
+    <div class="datos-readme">
+      <div class="dr-icon">✓</div>
+      <div><b>Lectura rápida para la demo</b><span>La cartografía es real; la demanda, obras y modelo ML son sintéticos. Las capacidades bloqueadas no se presentan como si estuvieran implementadas.</span></div>
+    </div>
+
+    <nav class="datos-toc datos-toc-pro" aria-label="Secciones de Datos">
+      <a href="#datos-fuentes"><span>01</span> Fuentes</a>
+      <a href="#datos-motor"><span>02</span> Motor</a>
+      <a href="#datos-paleta"><span>03</span> Paleta</a>
+      <a href="#datos-limites"><span>04</span> Límites</a>
+      <a href="#datos-salud"><span>05</span> Salud vial</a>
+      <a href="#datos-seguimiento"><span>06</span> Seguimiento</a>
     </nav>
 
-    <div class="section-divider datos-sec" id="datos-fuentes"><h2>Fuentes y motor</h2><p>De dónde sale cada dato que ves en la app, y qué puede y no puede calcular el motor hoy.</p></div>
-    <div class="card">
-      <div class="card-pad" style="padding-bottom:6px"><div class="card-h"><h2>Fuentes</h2></div></div>
-      ${sources.map(s=>`<div class="list-row"><div style="flex:1"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><b>${s.n}</b><span class="badge ${statusCls[s.s]}">${statusLabel[s.s]}</span></div><div style="font-size:12px;color:var(--muted);margin-top:3px;line-height:1.4">${s.d}</div></div></div>`).join('')}
+    <div class="section-divider datos-sec datos-section-head" id="datos-fuentes">
+      <div><div class="section-kicker">01 · TRAZABILIDAD</div><h2>Fuentes de información</h2><p>Qué dato llega a la aplicación y cuál es su condición actual.</p></div>
     </div>
-    <div class="card card-pad datos-sec" id="datos-motor" style="margin-top:14px">
-      <div class="card-h"><h2>Contrato del motor</h2><div class="sub">Qué puede calcular hoy y qué permanece bloqueado</div></div>
-      ${capabilities.map(c=>`<div class="list-row"><div style="flex:1"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><b style="flex:1;min-width:0">${c[0]}</b><span class="badge ${capCls[c[1]]}">${capText[c[1]]}</span></div><div style="font-size:11.5px;color:var(--muted);margin-top:3px">${c[2]} · <i>${c[3]}</i></div></div></div>`).join('')}
+    <div class="card datos-source-card">
+      <div class="datos-source-head"><b>Origen de los datos</b><span>Estado</span></div>
+      ${sources.map(s=>`<div class="datos-source-row">
+        <div class="source-main"><div class="source-title"><span class="source-status-dot ${statusCls[s.s]}"></span><b>${s.n}</b></div><div class="source-desc">${s.d}</div></div>
+        <span class="badge ${statusCls[s.s]}">${statusLabel[s.s]}</span>
+      </div>`).join('')}
     </div>
-    <div class="card card-pad datos-sec" id="datos-paleta" style="margin-top:14px">
-      <div class="card-h"><h2>Paleta operacional oficial</h2><div class="sub">Sección 9 del documento de alcance</div></div>
-      <div class="palette-grid">
-        ${Object.entries(paletteEntries).map(([label,hex])=>`<div class="palette-item">
+
+    <div class="card card-pad datos-sec datos-motor-pro" id="datos-motor">
+      <div class="card-h datos-card-head"><div><div class="section-kicker">02 · CAPACIDADES</div><h2>Contrato del motor</h2><p>Qué puede calcular hoy y qué permanece bloqueado.</p></div><div class="motor-count">${nAvail} · ${nPart} · ${nBlock}<small>Disponible · parcial · bloqueada</small></div></div>
+      <div class="datos-cap-grid">
+        ${capabilities.map(c=>`<div class="datos-cap-item">
+          <div class="cap-top"><span class="cap-state ${capCls[c[1]]}">${capText[c[1]]}</span><span class="cap-index">${capabilities.indexOf(c)+1}</span></div>
+          <b>${c[0]}</b>
+          <div class="cap-desc">${c[2]}</div>
+          <div class="cap-note">${c[3]}</div>
+        </div>`).join('')}
+      </div>
+    </div>
+
+    <div class="card card-pad datos-sec" id="datos-paleta">
+      <div class="card-h datos-card-head"><div><div class="section-kicker">03 · LENGUAJE VISUAL</div><h2>Paleta operacional oficial</h2><p>Estados usados para representar tráfico, obras, desvíos y disponibilidad.</p></div><div class="sub">Sección 9 del documento de alcance</div></div>
+      <div class="palette-grid palette-grid-pro">
+        ${Object.entries(paletteEntries).map(([label,hex])=>`<div class="palette-item palette-item-pro">
               <span class="palette-swatch" style="background:${hex}"></span>
               <div class="palette-text"><span class="palette-label">${label}</span><span class="palette-hex">${hex}</span></div>
             </div>`).join('')}
       </div>
     </div>
-    <div class="card card-pad datos-sec" id="datos-limites" style="margin-top:14px">
-      <div class="card-h"><h2>Límites de esta versión</h2></div>
-      <ul style="padding-left:18px;font-size:12.5px;color:var(--muted);line-height:1.9">
-        <li>No está calibrada con aforos, cámaras ni PMT oficiales.</li>
-        <li>La cartografía es real (OpenStreetMap); las obras, cierres y demanda son sintéticos.</li>
-        <li>No hay asignación de red tipo Wardrop/MSA en esta interfaz todavía.</li>
-        <li>Ningún resultado debe usarse para autorizar cierres, obras o comunicación pública real.</li>
-      </ul>
+
+    <div class="card card-pad datos-sec datos-limits-pro" id="datos-limites">
+      <div class="datos-limit-title"><div><div class="section-kicker">04 · CONTROL DE ALCANCE</div><h2>Límites de esta versión</h2></div><span class="badge high">Prototipo de demostración</span></div>
+      <div class="limit-grid">
+        <div><span>01</span><b>Datos de campo</b><p>No está calibrada con aforos, cámaras ni PMT oficiales.</p></div>
+        <div><span>02</span><b>Datos sintéticos</b><p>Obras, cierres y demanda son sintéticos; la cartografía es real.</p></div>
+        <div><span>03</span><b>Asignación de red</b><p>No hay asignación tipo Wardrop/MSA en esta interfaz todavía.</p></div>
+        <div><span>04</span><b>Uso institucional</b><p>Ningún resultado debe usarse para autorizar cierres, obras o comunicación pública real.</p></div>
+      </div>
     </div>
+
     ${buildSaludHTML()}
     ${buildSeguimientoHTML()}`;
   // Índice: scroll suave sin recargar
