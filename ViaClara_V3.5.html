@@ -795,9 +795,12 @@ button,input,select,textarea{font:inherit}
 }
 .hist-row .btn-rev:hover{background:rgba(0,113,227,.14)}
 .item.geo-hot{
-  background:rgba(0,113,227,.08) !important;
-  box-shadow:inset 3px 0 0 var(--blue);
+  /* solo acento de “mirando el mapa”, no imita el estado ON */
+  box-shadow:inset 3px 0 0 #94a3b8;
+  outline:1px dashed rgba(100,116,139,.35);
 }
+.item:not(.on).geo-hot{background:rgba(0,0,0,.02) !important}
+.item.on.geo-hot{background:rgba(0,113,227,.09) !important;box-shadow:inset 3px 0 0 var(--blue)}
 
 
 /* Export historial */
@@ -2507,7 +2510,7 @@ function renderOps(root){
       </div>`:''}
     </div>
 
-    <div class="section-divider" style="margin-top:26px"><h2>Alternativas</h2><p>Comparación compacta · detalle al expandir. Cifras del motor; barrios/comercio son <b>síntesis editorial de demo</b>.</p></div>
+    <div class="section-divider" style="margin-top:26px"><h2>Alternativas</h2><p>Tabla comparativa: <b>Elegir</b> fija la alternativa para el registro de decisión; <b>Detalle</b> abre mapa y restricciones de esa opción (no activa medidas en la red hasta que registres la decisión). Cifras del motor; barrios/comercio son síntesis editorial de demo.</p></div>
     <div id="alt-grid"></div>
     <div class="decision-sticky-cta" id="decision-cta"><div class="dst-txt"><b>Registro de decisión</b><br><span style="opacity:.8;font-size:12px">La decisión final la toma el decisor — no el motor.</span></div><button type="button" class="btn" id="go-decision">Ir a registrar decisión</button></div>
 
@@ -2596,16 +2599,28 @@ function renderOps(root){
     paintMap(mapEl,curLoads(),{ctrl:true,ix:true,labels:true,obra:true,highlight:opsHighlight});
   }
   root.querySelectorAll('[data-s]').forEach(el=>{
-    el.addEventListener('mouseenter',()=>{root.querySelectorAll('.item').forEach(x=>x.classList.remove('geo-hot'));el.classList.add('geo-hot');setHighlight(el.dataset.s);});
+    el.addEventListener('mouseenter',()=>{
+      root.querySelectorAll('.item').forEach(x=>x.classList.remove('geo-hot'));
+      el.classList.add('geo-hot');
+      // Solo resalta en mapa si la condición está ACTIVA (no confunde apagado con seleccionado)
+      if(el.classList.contains('on')) setHighlight(el.dataset.s);
+    });
     el.addEventListener('mouseleave',()=>{ el.classList.remove('geo-hot'); if(opsHighlight===el.dataset.s) setHighlight(null); });
-    el.addEventListener('focus',()=>setHighlight(el.dataset.s));
-    // click already toggles; also pin highlight
-    el.addEventListener('click',()=>setHighlight(el.dataset.s));
+    el.addEventListener('click',()=>{
+      // tras el toggle del click, el classList se actualiza en el mismo handler de data-s
+      setTimeout(()=>{ if(el.classList.contains('on')) setHighlight(el.dataset.s); else if(opsHighlight===el.dataset.s) setHighlight(null); }, 0);
+    });
   });
   root.querySelectorAll('[data-m]').forEach(el=>{
-    el.addEventListener('mouseenter',()=>{root.querySelectorAll('.item').forEach(x=>x.classList.remove('geo-hot'));el.classList.add('geo-hot');setHighlight(el.dataset.m);});
+    el.addEventListener('mouseenter',()=>{
+      root.querySelectorAll('.item').forEach(x=>x.classList.remove('geo-hot'));
+      el.classList.add('geo-hot');
+      if(el.classList.contains('on')) setHighlight(el.dataset.m);
+    });
     el.addEventListener('mouseleave',()=>{ el.classList.remove('geo-hot'); if(opsHighlight===el.dataset.m) setHighlight(null); });
-    el.addEventListener('click',()=>setHighlight(el.dataset.m));
+    el.addEventListener('click',()=>{
+      setTimeout(()=>{ if(el.classList.contains('on')) setHighlight(el.dataset.m); else if(opsHighlight===el.dataset.m) setHighlight(null); }, 0);
+    });
   });
 
   // Historial: filtros, búsqueda, revertir
