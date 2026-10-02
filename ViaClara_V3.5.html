@@ -1620,13 +1620,13 @@ html,body{
 </head>
 <body>
 <div class="topbar">
-  <div class="top-left"><div class="mark">VC</div> VíaClara</div>
-  <nav class="navpill" id="nav">
-    <button class="on" data-v="ops">Simular</button>
-    <button data-v="exp">Expediente</button>
-    <button data-v="port">Obras</button>
-    <button data-v="multi">Multicriterio</button>
-    <button data-v="datos">Datos</button>
+  <div class="top-left"><div class="mark">VC</div> VíaClara <span class="demo-badge" title="No hay datos de campo conectados">MODO DEMO · DATOS SINTÉTICOS</span></div>
+  <nav class="navpill" id="nav" role="tablist" aria-label="Secciones de VíaClara">
+    <button class="on" data-v="ops" role="tab" aria-selected="true">Simular</button>
+    <button data-v="exp" role="tab" aria-selected="false">Expediente</button>
+    <button data-v="port" role="tab" aria-selected="false">Obras</button>
+    <button data-v="multi" role="tab" aria-selected="false">Multicriterio</button>
+    <button data-v="datos" role="tab" aria-selected="false">Datos</button>
   </nav>
   <div class="top-right">
     <button class="ghost" id="btn-export">Exportar historial CSV</button>
@@ -1644,7 +1644,7 @@ html,body{
     <span class="grab"></span>
     <div style="display:flex;align-items:center;gap:10px">
       <h3>Recomendación operativa · IA</h3>
-      <button class="x" id="sheet-x">✕</button>
+      <button class="x" id="sheet-x" aria-label="Cerrar recomendación">✕</button>
     </div>
   </div>
   <div class="stream" id="stream" style="padding:16px"></div>
@@ -1675,14 +1675,18 @@ const MEASURES={
 const STUDY=[[4.548,-75.658],[4.555,-75.648],[4.550,-75.638],[4.538,-75.632],[4.525,-75.638],[4.518,-75.652],[4.520,-75.678],[4.528,-75.698],[4.538,-75.702],[4.548,-75.688],[4.552,-75.672],[4.548,-75.658]];
 const VC_ML_MODEL = {"features":["demanda","perdida_capacidad","incidente","evento","descoordinacion_semaforica","clima"],"means":[0.7008463380231886,0.1751818245262322,0.5009617922907892,0.5005119338520911,0.49842595038693827,0.5007431109712897],"scales":[0.28854912111939285,0.1010896560339955,0.2875181558208216,0.2891249192629716,0.2886393231240741,0.2898535783802252],"logit_coef":[0.8359774698783218,0.4101143249366909,0.5400409645012219,0.45121153122096574,0.3542691234796326,0.23730198766859426],"logit_intercept":2.407599340538208,"delay_means":[0.7008463380231886,0.1751818245262322,0.5009617922907892,0.5005119338520911,0.49842595038693827,0.5007431109712897],"delay_scales":[0.28854912111939285,0.1010896560339955,0.2875181558208216,0.2891249192629716,0.2886393231240741,0.2898535783802252],"delay_coef":[2.8745015653374257,3.5393440347066947,2.288200480786142,1.7274589211063733,1.4330568543048507,0.8595441663881136],"delay_intercept":28.646950372965915,"metrics":{"auc":0.791237025457282,"mae_min":0.9528458625733172,"train_n":30000,"seed":42}};
 function mlScore(sh,me){
-  // Modelo de ML entrenado fuera del navegador con 30.000 estados de desarrollo sintéticos.
+  // Demostración: las entradas proceden del mismo motor de cargas que pinta el mapa.
+  // No son observaciones de tráfico ni una predicción calibrada para operar la red.
+  const L=loadsWith(sh,me);
+  const m=metrics(L);
+  const critical=L.filter(v=>v>=1).length/Math.max(1,L.length);
   const x=[
-    0.70 + (sh.evento?0.14:0) - (me.ventana?0.06:0),
-    0.03 + (sh.obra?0.25:0) + (sh.semaforo?0.08:0) - (me.desvio?0.08:0),
-    sh.obra?0.20:0.04,
-    sh.evento?0.75:0.15,
-    sh.semaforo?0.78:0.18,
-    0.15
+    Math.min(1.2,.35+m.p95*.34+(sh.evento?.10:0)),
+    Math.min(1.2,critical*.9+(sh.obra?.20:0)),
+    Math.min(1,critical*1.5),
+    sh.evento?.75:.15,
+    Math.min(1,critical+(sh.semaforo?.20:0)),
+    .50 // clima desconocido: neutral; no hay fuente meteorológica conectada
   ].map(v=>Math.max(0,Math.min(1.2,v)));
   const z=x.map((v,i)=>(v-VC_ML_MODEL.means[i])/VC_ML_MODEL.scales[i]);
   const logit=VC_ML_MODEL.logit_intercept+z.reduce((a,v,i)=>a+v*VC_ML_MODEL.logit_coef[i],0);
@@ -1782,8 +1786,11 @@ function inside(ll){
   return ins;
 }
 function feats(){const f=[];Object.values(SHOCKS).forEach(s=>{if(s.on)f.push({n:s.feature,v:s.weight,type:'shock'})});Object.values(MEASURES).forEach(m=>{if(m.on)f.push({n:m.feature,v:m.weight,type:'measure'})});return f}
-function conf(){return Math.min(92,Math.max(55,70+Object.values(SHOCKS).filter(s=>s.on).length*4+Object.values(MEASURES).filter(m=>m.on).length*3-8))}
-
+function demoRange(ml){
+  // Banda de sensibilidad ilustrativa, no intervalo estadístico ni "confianza" del modelo.
+  const spread=.12+Math.min(.10,Math.abs((ml?.features?.[0]||.7)-.7)*.15);
+  return {low:Math.max(0,Math.round(((ml?.prob||0)-spread)*100)),high:Math.min(100,Math.round(((ml?.prob||0)+spread)*100))};
+}
 let view='ops', lastRun=null, decision=null, decisionReason='', decisionAltId=null, decisionAt=null, decisionSnapshot=null;
 
 function toast(m,kind){
@@ -2132,9 +2139,9 @@ function buildLastRun(R){
   const bestMov=pickBestMobility(alts)||alts[0];
   const ranked=[...alts].sort((a,b)=>a.ml.delay-b.ml.delay);
   const bestDelay=ranked[0];
-  const c=conf();
+  const range=demoRange(R.ml);
   return {
-    off:baseline,on:bestMov.m,feats:feats(),conf:c,
+    off:baseline,on:bestMov.m,feats:feats(),range,
     bestMobilityId:bestMov.id,
     bestDelayId:bestDelay?bestDelay.id:null,
     ml:{current:R.ml,best:bestDelay?bestDelay.ml:null,ranking:ranked.map(x=>({id:x.id,title:x.title,delay:+x.ml.delay.toFixed(1),prob:+x.ml.prob.toFixed(3)})),auc:VC_ML_MODEL.metrics.auc,mae:VC_ML_MODEL.metrics.mae_min},
@@ -2381,7 +2388,12 @@ function dismissAction(idx){
 }
 
 function render(){
-  document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===view));
+  document.querySelectorAll('#nav button').forEach(b=>{
+    const active=b.dataset.v===view;
+    b.classList.toggle('on',active);
+    b.setAttribute('aria-selected',String(active));
+  });
+  persistSession();
   const root=document.getElementById('view');
   root.querySelectorAll('.map').forEach(el=>{if(el._map){el._map.remove();el._map=null}});
   if(view==='ops') renderOps(root);
@@ -2410,7 +2422,7 @@ function renderOps(root){
     ?'Anomalía detectada · revisar recomendaciones'
     :'Red bajo monitoreo · sin alertas críticas';
   const statusMeta=R
-    ?`Viaje ${m.viaje} min · p95 ${m.p95} · índice ${run?run.conf:'—'}% · escenario demo`
+    ?`Viaje ${m.viaje} min · p95 ${m.p95} · estimación demo ${run?`${run.range.low}–${run.range.high}%`:'—'}`
     :'Recalculando escenario sintético…';
 
   root.innerHTML=`
@@ -2718,7 +2730,7 @@ function renderExp(root){
         ${chosen?`<b>${chosen.id||snap.altId}</b> · ${chosen.title||snap.altTitle}`:'Sin alternativa asociada'} · <span style="color:var(--muted)">${when}</span>
       </p>
       ${decisionReason?`<p style="margin-top:6px;font-size:12.5px;color:var(--muted);line-height:1.45"><b>Justificación:</b> ${decisionReason}</p>`:''}
-      ${snap?`<p style="margin-top:8px;font-size:11.5px;color:var(--muted)">p95 red ${snap.lastRunOff!=null?snap.lastRunOff:'—'} → ${snap.p95!=null?snap.p95:(snap.lastRunOn!=null?snap.lastRunOn:'—')} · v/c corredor ${snap.vcMax!=null?snap.vcMax:'—'} · viaje ${snap.tiempoViaje!=null?snap.tiempoViaje:'—'} min${snap.conf!=null?` · índice ${snap.conf}%`:''}</p>`:''}
+      ${snap?`<p style="margin-top:8px;font-size:11.5px;color:var(--muted)">p95 red ${snap.lastRunOff!=null?snap.lastRunOff:'—'} → ${snap.p95!=null?snap.p95:(snap.lastRunOn!=null?snap.lastRunOn:'—')} · v/c corredor ${snap.vcMax!=null?snap.vcMax:'—'} · viaje ${snap.tiempoViaje!=null?snap.tiempoViaje:'—'} min${snap.range?` · estimación demo ${snap.range.low}–${snap.range.high}%`:''}</p>`:''}
       ${meas?`<p style="margin-top:6px;font-size:11.5px;color:var(--muted)">Medidas al decidir: desvío ${meas.desvio?'ON':'off'} · onda ${meas.onda?'ON':'off'} · ventana ${meas.ventana?'ON':'off'}${sh?` · contexto obra ${sh.obra?'ON':'off'} / semáforo ${sh.semaforo?'ON':'off'} / evento ${sh.evento?'ON':'off'}`:''}</p>`:''}
       <p style="margin-top:8px;font-size:11px;color:var(--muted);line-height:1.4">Registro de sesión (demo). No constituye autorización operativa ni orden de cierre real.</p>
     </div>`:`<div class="exp-decision-box"><b>Sin decisión registrada</b><p style="margin-top:6px;font-size:12.5px;color:var(--muted)">La decisión se registra desde <b>Simular → Decisión</b> o desde Multicriterio («Usar en decisión»). Este expediente solo refleja el estado ya confirmado.</p></div>`}
@@ -2749,7 +2761,7 @@ function renderExp(root){
           <div class="list-row"><div class="dot"></div><div><b>Demanda hora pico</b><br><span style="color:var(--muted);font-size:12px">Calendario sintético</span></div></div>
         </div>
         <p style="font-size:13px;color:var(--muted);margin:14px 0;line-height:1.5;padding-top:12px;border-top:1px solid var(--line)">Pérdida de capacidad → redistribución a corredores alternos. Requiere validación técnica.</p>
-        <div class="evidence" style="margin:12px 0"><div style="display:flex;justify-content:space-between;align-items:center"><b>Cadena de análisis</b><span class="tag-ai">EXPERIMENTAL · SINTÉTICO</span></div><p>Geometría real de OSM + reglas de carga por tramo y un modelo de regresión logística entrenado fuera del navegador con 30.000 estados <b>sintéticos</b> (no observados). No hay cámaras, sensores ni fuente institucional conectada todavía; nada de esto controla semáforos ni genera órdenes reales. El expediente conserva la corrida como evidencia de sesión, no como hecho verificado de campo.</p><div class="kpi-row" style="margin-top:8px"><div class="kpi"><div class="k">Modelo</div><div class="v" style="font-size:13px">VC-ML-EXP 0.1</div></div><div class="kpi"><div class="k">Índice compuesto*</div><div class="v">${useSnap&&snap.conf!=null?snap.conf:conf()}%</div></div><div class="kpi"><div class="k">Estado</div><div class="v" style="font-size:13px">${decision?decLabel[decision].toUpperCase():'REVISIÓN'}</div></div></div><p style="font-size:10.5px;color:var(--muted);margin-top:8px">*No es una probabilidad estadística validada: combina cuántos factores están activos. Ver <b>Datos</b> para el detalle del modelo.</p></div>
+        <div class="evidence" style="margin:12px 0"><div style="display:flex;justify-content:space-between;align-items:center"><b>Cadena de análisis</b><span class="tag-ai">DEMO · DATOS SINTÉTICOS</span></div><p>Geometría de OSM y reglas de carga por tramo alimentan el mapa y el modelo de regresión logística, entrenado fuera del navegador con 30.000 estados <b>sintéticos</b> (no observados). No hay cámaras, aforos, GPS ni fuente institucional conectada; nada de esto controla semáforos ni genera órdenes reales. La estimación se muestra solo como demostración y conserva la corrida como evidencia de sesión, no como hecho verificado de campo.</p><div class="kpi-row" style="margin-top:8px"><div class="kpi"><div class="k">Modelo</div><div class="v" style="font-size:13px">VC-ML-EXP 0.1</div></div><div class="kpi"><div class="k">Rango demo*</div><div class="v">${(useSnap&&snap.range)?`${snap.range.low}–${snap.range.high}`:(lastRun?`${lastRun.range.low}–${lastRun.range.high}`:'—')}%</div></div><div class="kpi"><div class="k">Estado</div><div class="v" style="font-size:13px">${decision?decLabel[decision].toUpperCase():'REVISIÓN'}</div></div></div><p style="font-size:10.5px;color:var(--muted);margin-top:8px">*Banda de sensibilidad ilustrativa; no es un intervalo de confianza ni una probabilidad validada.</p></div>
       </div>
     </div>
 
@@ -2940,8 +2952,8 @@ function renderPort(root){
 }
 
 // ================= PORTAFOLIO DE OBRAS (fuente única, usada por Obras y por el Calendario) =================
-const CAL_START = new Date(2026,8,1); // 1 sep 2026
-const CAL_DAYS = 90; // horizonte de 90 días (1 sep – 29 nov 2026)
+const CAL_START = (()=>{const d=new Date();d.setHours(0,0,0,0);return d})();
+const CAL_DAYS = 90; // horizonte móvil y configurable en una futura fuente de cronograma
 const OBRAS_PORTFOLIO=[
   {id:'OB-001', name:'Rehabilitación por fases 19 de Julio', corridor:'Av. de las Américas', crew:'Cuadrilla A', start:'2026-09-05', end:'2026-09-24', status:'programada'},
   {id:'OB-002', name:'Rehabilitación Doble Calzada Armenia-Montenegro', corridor:'Av. Centenario', crew:'Cuadrilla B', start:'2026-09-13', end:'2026-10-28', status:'ejecucion'},
@@ -3520,7 +3532,9 @@ function decide(kind){
     L:alt.L?alt.L.slice():null,
     lastRunOff:lastRun&&lastRun.off?lastRun.off.p95:null,
     lastRunOn:lastRun&&lastRun.on?lastRun.on.p95:null,
-    conf:lastRun?lastRun.conf:null,
+    range:lastRun?lastRun.range:null,
+    modelVersion:'VC-ML-EXP 0.1',
+    modelFeatures:lastRec?.ml?.features?.slice()||null,
     measures:{desvio:MEASURES.desvio.on,onda:MEASURES.onda.on,ventana:MEASURES.ventana.on},
     shocks:{obra:SHOCKS.obra.on,semaforo:SHOCKS.semaforo.on,evento:SHOCKS.evento.on}
   };
@@ -3533,7 +3547,7 @@ function decide(kind){
     // Actualizar snapshot de medidas post-aplicación
     decisionSnapshot.measures={desvio:MEASURES.desvio.on,onda:MEASURES.onda.on,ventana:MEASURES.ventana.on};
   }
-  showRecPanel(`<div style="font-size:13px;line-height:1.5"><b>Decisión registrada: ${label}</b><p style="margin-top:8px;color:var(--muted)">${alt.id} · ${alt.title}</p><p style="margin-top:8px">${reason}</p><p style="margin-top:12px;font-size:11px;color:var(--muted)">p95 ${lastRun.off.p95} → ${lastRun.on.p95} · v/c corredor ${alt.vcMax} · índice compuesto ${lastRun.conf}%</p></div>`);
+  showRecPanel(`<div style="font-size:13px;line-height:1.5"><b>Decisión registrada: ${label}</b><p style="margin-top:8px;color:var(--muted)">${alt.id} · ${alt.title}</p><p style="margin-top:8px">${reason}</p><p style="margin-top:12px;font-size:11px;color:var(--muted)">p95 ${lastRun.off.p95} → ${lastRun.on.p95} · v/c corredor ${alt.vcMax} · estimación demo ${lastRun.range.low}–${lastRun.range.high}%</p></div>`);
   pushHistory({title:`Decisión: ${label} — ${alt.id}`, detail:reason, act:'decision'}, kind==='aprobada'?'aplicada':kind==='ajuste'?'ajuste':'descartada');
   histOpen=true;
   toast((kind==='aprobada'?'Aprobación simulada: ':'Decisión: ')+label,'ok');
@@ -3856,6 +3870,41 @@ document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>{view=b.datase
 document.getElementById('sheet-x').onclick=()=>openSheet(false);
 document.getElementById('sheet-back').onclick=()=>openSheet(false);
 
+// Persistencia local para que una revisión no se pierda al recargar. No sustituye un expediente
+// institucional: el export/servidor debe conservar identidad, firma y control de versiones.
+const SESSION_KEY='viaclara.demo.session.v1';
+function persistSession(){
+  try{localStorage.setItem(SESSION_KEY,JSON.stringify({
+    view, shocks:Object.fromEntries(Object.entries(SHOCKS).map(([k,v])=>[k,!!v.on])),
+    measures:Object.fromEntries(Object.entries(MEASURES).map(([k,v])=>[k,!!v.on])),
+    opsHistory, decision, decisionReason, decisionAltId, decisionAt, decisionSnapshot,
+    selectedAltId, OBRAS_OVERRIDE, lastMovedObraId, lastCalChangeMsg
+  }));}catch(e){console.warn('No se pudo guardar la sesión local.',e)}
+}
+function restoreSession(){
+  try{
+    const s=JSON.parse(localStorage.getItem(SESSION_KEY)||'null'); if(!s)return;
+    Object.entries(s.shocks||{}).forEach(([k,v])=>{if(SHOCKS[k])SHOCKS[k].on=!!v});
+    Object.entries(s.measures||{}).forEach(([k,v])=>{if(MEASURES[k])MEASURES[k].on=!!v});
+    view=['ops','exp','port','multi','datos'].includes(s.view)?s.view:view;
+    opsHistory=Array.isArray(s.opsHistory)?s.opsHistory.slice(0,40):[];
+    opsHistory.forEach(h=>opsHandled.add(actionKey(h)));
+    decision=s.decision||null; decisionReason=s.decisionReason||''; decisionAltId=s.decisionAltId||null;
+    decisionAt=s.decisionAt||null; decisionSnapshot=s.decisionSnapshot||null; selectedAltId=s.selectedAltId||null;
+    OBRAS_OVERRIDE=s.OBRAS_OVERRIDE||{}; lastMovedObraId=s.lastMovedObraId||null; lastCalChangeMsg=s.lastCalChangeMsg||'';
+  }catch(e){console.warn('No se pudo restaurar la sesión local.',e)}
+}
+restoreSession();
+
+let lastFocus=null;
+function showResetModal(){lastFocus=document.activeElement;document.getElementById('reset-modal')?.classList.add('show');document.getElementById('reset-cancel')?.focus()}
+function closeResetModal(){document.getElementById('reset-modal')?.classList.remove('show');lastFocus?.focus?.()}
+document.addEventListener('keydown',(e)=>{
+  if(e.key!=='Escape')return;
+  if(document.getElementById('reset-modal')?.classList.contains('show')) closeResetModal();
+  else openSheet(false);
+});
+
 
 document.getElementById('btn-export').onclick=()=>exportHistCSV();
 
@@ -3884,6 +3933,7 @@ function doResetSession(){
   OBRAS_OVERRIDE={};
   lastMovedObraId=null;
   lastCalChangeMsg='';
+  try{localStorage.removeItem(SESSION_KEY)}catch(e){}
   lastSyncAt=Date.now();
   document.getElementById('stream').innerHTML='';
   openSheet(false);
@@ -3892,14 +3942,14 @@ function doResetSession(){
   toast('Sesión reiniciada · red en estado base','ok');
 }
 document.getElementById('btn-reset').onclick=()=>{
-  document.getElementById('reset-modal')?.classList.add('show');
+  showResetModal();
 };
 document.getElementById('reset-cancel')?.addEventListener('click',()=>{
-  document.getElementById('reset-modal')?.classList.remove('show');
+  closeResetModal();
 });
 document.getElementById('reset-confirm')?.addEventListener('click',()=>doResetSession());
 document.getElementById('reset-modal')?.addEventListener('click',(e)=>{
-  if(e.target.id==='reset-modal') e.target.classList.remove('show');
+  if(e.target.id==='reset-modal') closeResetModal();
 });
 render();
 </script>
