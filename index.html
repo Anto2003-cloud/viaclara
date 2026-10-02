@@ -1616,6 +1616,12 @@ html,body{
 .multi-reading b{font-family:var(--mono);font-weight:650;color:var(--text)}
 .demo-badge{display:inline-block;margin-top:10px;padding:5px 9px;border:1px solid rgba(0,0,0,.10);border-radius:999px;font-size:10px;font-weight:700;letter-spacing:.035em;opacity:.72}
 @media(max-width:700px){.demo-badge{display:block;width:max-content}}
+.session-menu{position:relative}.session-menu summary{list-style:none}.session-menu summary::-webkit-details-marker{display:none}.session-menu[open] summary{background:rgba(0,113,227,.08)}
+.session-pop{position:absolute;right:0;top:calc(100% + 6px);min-width:190px;padding:6px;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:10020}.session-pop button{display:block;width:100%;text-align:left}
+.presentation-guide{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;margin:0 0 16px;border:1px solid #bfdbfe;border-radius:12px;background:#eff6ff}.presentation-guide b{font-size:13px}.presentation-guide p{font-size:12px;color:var(--muted);margin-top:2px}
+@media(max-width:800px){.top-right{gap:3px}.top-right>#btn-export{display:none}.presentation-guide{align-items:flex-start;flex-direction:column}.session-pop{right:0}}
+@media(max-width:700px){.map-legend,.data-table th,.data-table td,.evidence p,.sub,.kpi .k,.tag-ai{font-size:12px!important}}
+@media print{.topbar,.notice-banner,.sheet,.sheet-back,.ops-side,.decision-sticky-cta,.presentation-guide,.btn,.ghost{display:none!important}.wrap{max-width:none!important;padding:0!important}.card{break-inside:avoid;box-shadow:none!important}.map{height:250px!important}}
 </style>
 </head>
 <body>
@@ -1629,9 +1635,13 @@ html,body{
     <button data-v="datos" role="tab" aria-selected="false">Datos</button>
   </nav>
   <div class="top-right">
-    <button class="ghost" id="btn-export">Exportar CSV</button>
-    <button class="ghost" id="btn-export-json">Respaldar JSON</button>
-    <button class="ghost" id="btn-import-json">Importar JSON</button>
+    <button class="ghost" id="btn-present">Presentar</button>
+    <details class="session-menu"><summary class="ghost">Sesión</summary><div class="session-pop">
+      <button class="ghost" id="btn-export">Exportar CSV</button>
+      <button class="ghost" id="btn-export-json">Respaldar JSON</button>
+      <button class="ghost" id="btn-import-json">Importar JSON</button>
+      <button class="ghost" id="btn-executive">Resumen imprimible</button>
+    </div></details>
     <input type="file" id="input-import-json" accept="application/json,.json" hidden>
     <button class="ghost" id="btn-reset">Reset</button>
   </div>
@@ -1802,7 +1812,7 @@ function demoRange(ml){
   const spread=.12+Math.min(.10,Math.abs((ml?.features?.[0]||.7)-.7)*.15);
   return {low:Math.max(0,Math.round(((ml?.prob||0)-spread)*100)),high:Math.min(100,Math.round(((ml?.prob||0)+spread)*100))};
 }
-let view='ops', lastRun=null, decision=null, decisionReason='', decisionAltId=null, decisionAt=null, decisionSnapshot=null;
+let view='ops', lastRun=null, decision=null, decisionReason='', decisionAltId=null, decisionAt=null, decisionSnapshot=null, presentationMode=false;
 
 function toast(m,kind,action){
   const e=document.getElementById('notice-banner');
@@ -2454,6 +2464,7 @@ function renderOps(root){
   root.innerHTML=`
     <div class="hero ops-hero"><div class="eye">Operación · motor demo</div><h1>Monitor de red</h1>
       <p>Simulación heurística sobre cartografía OSM. El contexto (obra, semáforo, evento) alimenta el mapa, las recomendaciones y las tres alternativas. <b>No hay cámaras ni aforos institucionales conectados</b>.</p></div>
+    ${presentationMode?`<div class="presentation-guide"><div><b>Guion de presentación activo · paso 1 de 3</b><p>Explica el escenario, revisa el mapa y continúa a la comparación de alternativas.</p></div><div class="row"><button class="btn btn-s" id="present-compare">2. Comparar</button><button class="btn btn-p" id="present-decision">3. Decidir</button></div></div>`:''}
 
     <div class="ops-status ${statusCls}">
       <span class="live"><span class="live-dot"></span>${statusTxt}</span>
@@ -3850,6 +3861,8 @@ function renderDatos(root){
       el.scrollIntoView({behavior:'smooth',block:'start'});
     });
   });
+  document.getElementById('present-compare')?.addEventListener('click',()=>document.getElementById('alt-grid')?.scrollIntoView({behavior:'smooth',block:'start'}));
+  document.getElementById('present-decision')?.addEventListener('click',()=>document.getElementById('decision-card')?.scrollIntoView({behavior:'smooth',block:'start'}));
 }
 
 
@@ -3907,7 +3920,7 @@ function persistSession(){
     view, shocks:Object.fromEntries(Object.entries(SHOCKS).map(([k,v])=>[k,!!v.on])),
     measures:Object.fromEntries(Object.entries(MEASURES).map(([k,v])=>[k,!!v.on])),
     opsHistory, decision, decisionReason, decisionAltId, decisionAt, decisionSnapshot,
-    selectedAltId, OBRAS_OVERRIDE, lastMovedObraId, lastCalChangeMsg
+    selectedAltId, OBRAS_OVERRIDE, lastMovedObraId, lastCalChangeMsg, presentationMode
   }));}catch(e){console.warn('No se pudo guardar la sesión local.',e)}
 }
 function downloadFile(name,content,type){
@@ -3927,7 +3940,7 @@ function applySession(s){
   view=['ops','exp','port','multi','datos'].includes(s.view)?s.view:view;
   opsHistory=Array.isArray(s.opsHistory)?s.opsHistory.slice(0,40):[];opsHandled.clear();opsHistory.forEach(h=>opsHandled.add(actionKey(h)));
   decision=s.decision||null;decisionReason=s.decisionReason||'';decisionAltId=s.decisionAltId||null;decisionAt=s.decisionAt||null;decisionSnapshot=s.decisionSnapshot||null;selectedAltId=s.selectedAltId||null;
-  OBRAS_OVERRIDE=s.OBRAS_OVERRIDE||{};lastMovedObraId=s.lastMovedObraId||null;lastCalChangeMsg=s.lastCalChangeMsg||'';lastRec=null;lastRun=null;
+  OBRAS_OVERRIDE=s.OBRAS_OVERRIDE||{};lastMovedObraId=s.lastMovedObraId||null;lastCalChangeMsg=s.lastCalChangeMsg||'';presentationMode=!!s.presentationMode;lastRec=null;lastRun=null;
 }
 function importSessionJSON(file){
   if(!file)return;const reader=new FileReader();
@@ -3956,6 +3969,19 @@ document.getElementById('btn-export').onclick=()=>exportHistCSV();
 document.getElementById('btn-export-json').onclick=()=>exportSessionJSON();
 document.getElementById('btn-import-json').onclick=()=>document.getElementById('input-import-json').click();
 document.getElementById('input-import-json').onchange=e=>{importSessionJSON(e.target.files?.[0]);e.target.value=''};
+document.getElementById('btn-present').onclick=()=>{
+  presentationMode=true;view='ops';
+  SHOCKS.obra.on=true;SHOCKS.semaforo.on=true;SHOCKS.evento.on=true;
+  MEASURES.desvio.on=false;MEASURES.onda.on=false;MEASURES.ventana.on=false;
+  selectedAltId='ALT-A';runSim({silent:true});toast('Guion listo · 1) escenario, 2) alternativas, 3) decisión','ok');
+};
+function printExecutiveSummary(){
+  const alts=buildAlternatives();const chosen=alts.find(a=>a.id===(decisionAltId||selectedAltId))||alts[0];const base=lastRun?.off||metrics(curLoads());
+  const popup=window.open('','viaclara-resumen','width=820,height=720');
+  if(!popup){toast('Permite ventanas emergentes para imprimir el resumen','warn');return}
+  popup.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Resumen ejecutivo · VíaClara</title><style>body{font:14px Arial,sans-serif;color:#172033;margin:38px;line-height:1.45}h1{margin:0 0 4px}h2{margin-top:28px;font-size:17px}small,p{color:#475467}table{width:100%;border-collapse:collapse}th,td{padding:9px;border-bottom:1px solid #d0d5dd;text-align:left}th{background:#f2f4f7}@media print{button{display:none}}</style></head><body><h1>VíaClara · Resumen ejecutivo</h1><p><b>Prototipo demostrativo · datos sintéticos</b><br>Generado: ${new Date().toLocaleString('es-CO')}</p><h2>Escenario</h2><p>Obra: ${SHOCKS.obra.on?'activa':'inactiva'} · Semáforo: ${SHOCKS.semaforo.on?'descoordinado':'estable'} · Evento: ${SHOCKS.evento.on?'activo':'inactivo'}</p><h2>Alternativa propuesta</h2><p><b>${v42Esc(chosen.id)} · ${v42Esc(chosen.title)}</b><br>${v42Esc(chosen.ruta)}</p><h2>Comparación</h2><table><tr><th>Escenario</th><th>p95 v/c</th><th>Máx. v/c</th><th>Viaje</th></tr><tr><td>Base</td><td>${base.p95}</td><td>${base.max}</td><td>${base.viaje} min</td></tr><tr><td>${v42Esc(chosen.id)}</td><td>${chosen.m.p95}</td><td>${chosen.m.max}</td><td>${chosen.m.viaje} min</td></tr></table><h2>Decisión</h2><p>${decision?`${v42Esc(decision)} · ${v42Esc(decisionReason||'Sin justificación registrada.')}`:'Pendiente de decisión del responsable.'}</p><p><small>Este documento es una salida de prototipo. No representa aforos observados, autorización operativa ni una orden de cierre.</small></p><button onclick="print()">Imprimir / Guardar PDF</button></body></html>`);popup.document.close();popup.focus();
+}
+document.getElementById('btn-executive').onclick=()=>printExecutiveSummary();
 
 function doResetSession(){
   // Cancelar procesos en vuelo
@@ -3984,6 +4010,7 @@ function doResetSession(){
   OBRAS_OVERRIDE={};
   lastMovedObraId=null;
   lastCalChangeMsg='';
+  presentationMode=false;
   try{localStorage.removeItem(SESSION_KEY)}catch(e){}
   lastSyncAt=Date.now();
   document.getElementById('stream').innerHTML='';
